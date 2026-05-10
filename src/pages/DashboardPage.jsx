@@ -40,7 +40,7 @@ export default function DashboardPage() {
         className="relative rounded-3xl overflow-hidden mb-8 h-64 md:h-80"
       >
         <img
-          src="/images/hero.png"
+          src="https://images.unsplash.com/photo-1500835556837-99ac94a94552?w=1600&q=80"
           alt="Travel hero"
           className="absolute inset-0 w-full h-full object-cover"
         />

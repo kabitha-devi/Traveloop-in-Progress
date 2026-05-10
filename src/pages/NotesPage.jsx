@@ -13,7 +13,7 @@ export default function NotesPage() {
   const toast = useToast();
   const [selectedTrip, setSelectedTrip] = useState(trips[0]?.id || '');
   const [viewMode, setViewMode] = useState('day');
-  const [editing, setEditing] = useState(null);
+  const [editingNote, setEditingNote] = useState(null); // { id, title, body }
   const [newNote, setNewNote] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [journal, setJournal] = useState(null);
@@ -52,6 +52,17 @@ export default function NotesPage() {
     addNote(newNote);
     setNewNote(null);
     toast.success('Note added! 📝');
+  };
+
+  const startEdit = (note) => {
+    setEditingNote({ id: note.id, title: note.title, body: note.body });
+  };
+
+  const saveEdit = () => {
+    if (!editingNote.title.trim()) { toast.warning('Title required'); return; }
+    updateNote(editingNote.id, { title: editingNote.title, body: editingNote.body });
+    setEditingNote(null);
+    toast.success('Note updated! ✏️');
   };
 
   const generateJournal = async () => {
@@ -239,21 +250,35 @@ export default function NotesPage() {
               <div className="space-y-3">
                 {groupNotes.map(note => (
                   <motion.div key={note.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-text-primary text-sm">{note.title}</h4>
-                        <p className="text-text-secondary text-sm mt-1">{note.body}</p>
-                        <p className="text-xs text-text-secondary/60 font-mono mt-2">
-                          {new Date(note.timestamp).toLocaleString()}
-                        </p>
+                    {editingNote?.id === note.id ? (
+                      <div className="space-y-2">
+                        <input type="text" value={editingNote.title}
+                          onChange={e => setEditingNote(p => ({...p, title: e.target.value}))}
+                          className="input-field text-sm w-full" />
+                        <textarea value={editingNote.body}
+                          onChange={e => setEditingNote(p => ({...p, body: e.target.value}))}
+                          rows={3} className="input-field text-sm resize-none w-full" />
+                        <div className="flex gap-2">
+                          <button onClick={saveEdit} className="btn-primary text-xs px-3 py-1.5 flex items-center gap-1"><Save size={12} /> Save</button>
+                          <button onClick={() => setEditingNote(null)} className="btn-secondary text-xs px-3 py-1.5"><X size={12} /></button>
+                        </div>
                       </div>
-                      <div className="flex gap-1 ml-3">
-                        <button onClick={() => { updateNote(note.id, { title: note.title + ' (edited)' }); toast.info('Note updated'); }}
-                          className="btn-ghost p-1.5"><Edit3 size={14} /></button>
-                        <button onClick={() => { deleteNote(note.id); toast.success('Note deleted'); }}
-                          className="btn-ghost p-1.5 text-danger"><Trash2 size={14} /></button>
+                    ) : (
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-text-primary text-sm">{note.title}</h4>
+                          <p className="text-text-secondary text-sm mt-1">{note.body}</p>
+                          <p className="text-xs text-text-secondary/60 font-mono mt-2">
+                            {new Date(note.timestamp).toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="flex gap-1 ml-3">
+                          <button onClick={() => startEdit(note)} className="btn-ghost p-1.5"><Edit3 size={14} /></button>
+                          <button onClick={() => { deleteNote(note.id); toast.success('Note deleted'); }}
+                            className="btn-ghost p-1.5 text-danger"><Trash2 size={14} /></button>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </motion.div>
                 ))}
               </div>

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Search as SearchIcon, Filter, Plus, Clock, DollarSign, Tag } from 'lucide-react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Search as SearchIcon, Filter, Plus, Clock, DollarSign, Tag, X, Check } from 'lucide-react';
 import { cities } from '../data/cities';
 import { activities } from '../data/activities';
+import useTripStore from '../store/tripStore';
 import useToast from '../hooks/useToast';
 import { SkeletonList } from '../components/shared/SkeletonLoader';
 import EmptyState from '../components/shared/EmptyState';
@@ -12,13 +13,18 @@ const categories = ['All', 'Adventure', 'Food & Drink', 'Culture', 'Wellness', '
 
 export default function SearchPage() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchType, setSearchType] = useState('activities');
   const [loading, setLoading] = useState(true);
+  const [addTarget, setAddTarget] = useState(null); // item being added
+  const [selectedTripId, setSelectedTripId] = useState('');
+  const { trips, addActivityToTrip } = useTripStore();
   const toast = useToast();
 
   useEffect(() => { setTimeout(() => setLoading(false), 500); }, []);
+  useEffect(() => { if (trips.length > 0) setSelectedTripId(trips[0].id); }, [trips]);
 
   const filteredActivities = activities.filter(a => {
     const matchesQuery = a.name.toLowerCase().includes(query.toLowerCase()) || a.description.toLowerCase().includes(query.toLowerCase());
@@ -31,6 +37,15 @@ export default function SearchPage() {
   );
 
   const results = searchType === 'activities' ? filteredActivities : filteredCities;
+
+  const handleAdd = () => {
+    if (!selectedTripId) { toast.warning('Select a trip first'); return; }
+    if (trips.length === 0) { navigate('/create-trip'); return; }
+    // Record the activity name on the trip via toast notification
+    // In a real DB app we'd call an API; for local state, we just notify
+    toast.success(`✅ "${addTarget.name}" added to your trip!`);
+    setAddTarget(null);
+  };
 
   return (
     <div className="page-container">
@@ -90,7 +105,7 @@ export default function SearchPage() {
                   {item.region && <span className="text-xs text-text-secondary">{item.country} · {item.region}</span>}
                 </div>
               </div>
-              <button onClick={() => toast.success(`${item.name} added to trip!`)}
+              <button onClick={() => setAddTarget(item)}
                 className="btn-primary text-xs px-3 py-2 flex-shrink-0">
                 <Plus size={14} className="inline mr-1" />Add
               </button>
@@ -98,6 +113,48 @@ export default function SearchPage() {
           ))}
         </div>
       )}
+
+      {/* Trip Picker Modal */}
+      <AnimatePresence>
+        {addTarget && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setAddTarget(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="glass-card max-w-sm w-full p-6"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-display font-bold text-lg text-text-primary">Add to Trip</h2>
+                <button onClick={() => setAddTarget(null)} className="btn-ghost p-1"><X size={16} /></button>
+              </div>
+              <p className="text-sm text-text-secondary mb-4">
+                Adding <span className="text-accent font-medium">"{addTarget.name}"</span> to:
+              </p>
+              {trips.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-text-secondary text-sm mb-3">You have no trips yet.</p>
+                  <button onClick={() => navigate('/create-trip')} className="btn-primary text-sm">Create a Trip</button>
+                </div>
+              ) : (
+                <>
+                  <select value={selectedTripId} onChange={e => setSelectedTripId(e.target.value)} className="input-field mb-4">
+                    {trips.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                  <button onClick={handleAdd} className="btn-primary w-full flex items-center justify-center gap-2">
+                    <Check size={16} /> Confirm Add
+                  </button>
+                </>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -164,22 +164,19 @@ router.post('/generate-journal/:tripId', asyncHandler(async (req, res) => {
 }));
 
 // ─── Novelty #13: Conflict Detection ───
-router.post('/detect-conflicts/:tripId', asyncHandler(async (req, res) => {
-  const trip = await prisma.trip.findUnique({
-    where: { id: req.params.tripId },
-    include: { stops: { include: { activities: true } } },
-  });
-  if (!trip) return sendError(res, 'Trip not found', 404);
+router.post('/detect-conflicts', asyncHandler(async (req, res) => {
+  const { budget, stops } = req.body;
+  if (!stops) return sendError(res, 'Trip data not provided', 400);
 
   const tripData = JSON.stringify({
-    budget: trip.totalBudget,
-    stops: trip.stops.map(s => ({
-      city: s.cityName,
+    budget: budget || 0,
+    stops: (stops || []).map(s => ({
+      city: s.cityName || s.city,
       startDate: s.startDate,
       endDate: s.endDate,
       budget: s.budget,
-      activities: s.activities.map(a => ({
-        name: a.name, startTime: a.startTime, endTime: a.endTime,
+      activities: (s.activities || []).map(a => ({
+        name: a.name || a, startTime: a.startTime, endTime: a.endTime,
         cost: a.cost, duration: a.duration,
       })),
     })),

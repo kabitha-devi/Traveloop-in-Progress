@@ -1,21 +1,54 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Heart, Copy, MapPin, User, TrendingUp, Flame } from 'lucide-react';
+import { Search, Heart, Copy, MapPin, TrendingUp, Flame } from 'lucide-react';
 import useTripStore from '../store/tripStore';
 import { cities } from '../data/cities';
 import { activities } from '../data/activities';
 import useToast from '../hooks/useToast';
 
 export default function CommunityPage() {
-  const { trips } = useTripStore();
+  const { trips, addTrip } = useTripStore();
   const [query, setQuery] = useState('');
   const toast = useToast();
+  const [likedIds, setLikedIds] = useState(new Set());
+  const [likeCounts, setLikeCounts] = useState({});
 
-  const publicTrips = trips.map(t => ({ ...t, likes: Math.floor(Math.random() * 200) + 20, saves: Math.floor(Math.random() * 50) + 5, author: ['Alex R.', 'Priya S.', 'Marco R.', 'Yuki T.', 'Fatima A.'][Math.floor(Math.random() * 5)] }));
+  const publicTrips = trips.map((t, i) => ({
+    ...t,
+    likes: likeCounts[t.id] ?? Math.floor(Math.random() * 200) + 20,
+    saves: Math.floor(Math.random() * 50) + 5,
+    author: ['Alex R.', 'Priya S.', 'Marco R.', 'Yuki T.', 'Fatima A.'][i % 5],
+  }));
 
   const filtered = publicTrips.filter(t => t.name.toLowerCase().includes(query.toLowerCase()));
-  const trendingCities = cities.sort((a, b) => b.popularity - a.popularity).slice(0, 5);
-  const popularActivities = activities.sort((a, b) => b.cost - a.cost).slice(0, 5);
+  const trendingCities = [...cities].sort((a, b) => b.popularity - a.popularity).slice(0, 5);
+  const popularActivities = [...activities].sort((a, b) => b.cost - a.cost).slice(0, 5);
+
+  const handleLike = (trip) => {
+    const isLiked = likedIds.has(trip.id);
+    setLikedIds(prev => {
+      const next = new Set(prev);
+      isLiked ? next.delete(trip.id) : next.add(trip.id);
+      return next;
+    });
+    setLikeCounts(prev => ({
+      ...prev,
+      [trip.id]: (prev[trip.id] ?? trip.likes) + (isLiked ? -1 : 1),
+    }));
+    toast.info(isLiked ? 'Unliked' : '❤️ Liked!');
+  };
+
+  const handleCopyTrip = (trip) => {
+    const copied = {
+      ...trip,
+      id: `copy_${trip.id}_${Date.now()}`,
+      name: `${trip.name} (Copy)`,
+      status: 'upcoming',
+      userId: 'current',
+    };
+    addTrip(copied);
+    toast.success(`✅ "${trip.name}" copied to your trips!`);
+  };
 
   return (
     <div className="page-container">
@@ -56,10 +89,14 @@ export default function CommunityPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      <button className="flex items-center gap-1 text-text-secondary hover:text-danger transition-colors" onClick={() => toast.info('Liked!')}>
-                        <Heart size={16} /><span className="text-xs">{trip.likes}</span>
+                      <button
+                        className={`flex items-center gap-1 transition-colors ${likedIds.has(trip.id) ? 'text-danger' : 'text-text-secondary hover:text-danger'}`}
+                        onClick={() => handleLike(trip)}
+                      >
+                        <Heart size={16} className={likedIds.has(trip.id) ? 'fill-danger' : ''} />
+                        <span className="text-xs">{likeCounts[trip.id] ?? trip.likes}</span>
                       </button>
-                      <button onClick={() => toast.success('Trip copied to your plans!')} className="btn-primary text-xs px-3 py-1.5 flex items-center gap-1">
+                      <button onClick={() => handleCopyTrip(trip)} className="btn-primary text-xs px-3 py-1.5 flex items-center gap-1">
                         <Copy size={12} /> Copy Trip
                       </button>
                     </div>

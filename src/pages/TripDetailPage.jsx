@@ -60,7 +60,7 @@ export default function TripDetailPage() {
   const optimizeBudget = async () => {
     setBudgetLoading(true);
     try {
-      const data = await aiApi.optimizeBudget(tripId);
+      const data = await aiApi.optimizeBudget({ budget: trip.totalBudget, stops: tripStops });
       setBudgetResult(data);
       setActivePanel('budget');
       toast.success('Budget optimized! 💰');
@@ -74,7 +74,7 @@ export default function TripDetailPage() {
   const detectConflicts = async () => {
     setConflictLoading(true);
     try {
-      const data = await aiApi.detectConflicts(tripId);
+      const data = await aiApi.detectConflicts({ budget: trip.totalBudget, stops: tripStops });
       setConflicts(data);
       setActivePanel('conflicts');
       toast.success('Conflicts analyzed! 🔍');
