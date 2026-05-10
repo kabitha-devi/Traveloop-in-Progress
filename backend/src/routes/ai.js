@@ -15,7 +15,7 @@ router.post('/generate-trip', asyncHandler(async (req, res) => {
 
   const userMsg = `Plan a ${days || 5}-day trip: "${query}". Maximum Budget: $${budget || 'flexible'}. Travelers: ${travelers || 1}. Preferences: ${preferences || 'mixed activities'}.`;
 
-  const result = await callAI(systemPrompt, userMsg, req.user.id, 'trip_generator');
+  const result = await callAI(systemPrompt, userMsg, req.user.id, 'trip_generator', { budget: parseInt(budget) || 5000, destination: query, days: parseInt(days) || 5 });
 
   // Auto-save as a trip if generation was successful
   if (result.stops && result.stops.length > 0) {

@@ -126,8 +126,9 @@ function scaleCosts(dest, budget) {
   const misc = budget - accommodation - transport - food - activitiesTotal;
 
   const stopsCount = dest.stops.length;
-  const dailyHotel = Math.floor(accommodation / (dest.stops.reduce((s, st) => s + st.days, 0) || 5));
-  const perActBudget = activitiesTotal / (totalBaseActivitiesCost || 1);
+  const totalDays = dest.stops.reduce((s, st) => s + st.days, 0) || 5;
+  const dailyHotel = Math.floor(accommodation / totalDays);
+  const perActBudget = totalBaseActivitiesCost > 0 ? activitiesTotal / totalBaseActivitiesCost : 1;
 
   return {
     stops: dest.stops.map((stop, si) => ({
@@ -144,19 +145,25 @@ function scaleCosts(dest, budget) {
   };
 }
 
-function getMockResponse(feature, userMessage) {
-  // ─── Parse destination and budget ───
-  let rawDestination = 'your destination';
-  let budget = 15000;
+function getMockResponse(feature, userMessage, extraContext) {
+  // ─── Parse destination and budget: prefer explicit extraContext ───
+  let rawDestination = extraContext?.destination || 'your destination';
+  let budget = extraContext?.budget || null;
 
-  if (userMessage) {
-    const tripMatch = userMessage.match(/trip:\s*"([^"]+)"/i) || userMessage.match(/trip to\s+([^.,"]+)/i) || userMessage.match(/"([^"]+)"/);
-    if (tripMatch && tripMatch[1]) {
-      rawDestination = tripMatch[1].replace(/^\s*(plan\s+a\s+)?(\d+-day\s+)?trip\s*(to\s+)?/i, '').trim();
-    }
-    const budgetMatch = userMessage.match(/Budget:\s*\$(\d+)/i) || userMessage.match(/budget.*?\$(\d+)/i);
-    if (budgetMatch && budgetMatch[1]) {
-      budget = parseInt(budgetMatch[1], 10);
+  // Only fall back to regex if not provided directly
+  if (!budget && userMessage) {
+    const budgetMatch = userMessage.match(/Maximum Budget:\s*\$(\d+)/i) ||
+                        userMessage.match(/Budget:\s*\$(\d+)/i) ||
+                        userMessage.match(/\$(\d+)/i);
+    if (budgetMatch) budget = parseInt(budgetMatch[1], 10);
+  }
+  if (!budget) budget = 5000; // last resort default
+
+  if (!rawDestination || rawDestination === 'your destination') {
+    if (userMessage) {
+      const tripMatch = userMessage.match(/trip:\s*"([^"]+)"/i) ||
+                        userMessage.match(/trip to\s+([^."]+)/i);
+      if (tripMatch) rawDestination = tripMatch[1].trim();
     }
   }
 

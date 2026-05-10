@@ -16,10 +16,10 @@ function getModel() {
 /**
  * Call Gemini with structured JSON response
  */
-async function callAI(systemPrompt, userMessage, userId, feature) {
+async function callAI(systemPrompt, userMessage, userId, feature, extraContext) {
   const gemini = getModel();
   if (!gemini) {
-    return getMockResponse(feature, userMessage);
+    return getMockResponse(feature, userMessage, extraContext);
   }
 
   const start = Date.now();
@@ -71,7 +71,7 @@ async function callAI(systemPrompt, userMessage, userId, feature) {
       },
     });
     console.error(`AI Error [${feature}]:`, error.message);
-    return getMockResponse(feature, userMessage);
+    return getMockResponse(feature, userMessage, extraContext);
   }
 }
 
