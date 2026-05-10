@@ -358,39 +358,131 @@ export default function CreateTripPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
               onClick={() => setSelectedActivity(null)}
             >
               <motion.div
-                initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                initial={{ scale: 0.92, opacity: 0, y: 30 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                className="glass-card max-w-md w-full overflow-hidden"
+                exit={{ scale: 0.92, opacity: 0, y: 20 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="glass-card max-w-lg w-full overflow-hidden max-h-[90vh] overflow-y-auto"
                 onClick={e => e.stopPropagation()}
               >
-                <div className="relative h-48">
-                  <img src={selectedActivity.image} alt={selectedActivity.name} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent"></div>
-                  <button onClick={() => setSelectedActivity(null)} className="absolute top-3 right-3 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white transition-colors">
+                {/* Hero Image */}
+                <div className="relative h-56 flex-shrink-0">
+                  <img
+                    src={selectedActivity.image}
+                    alt={selectedActivity.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
+                  <button
+                    onClick={() => setSelectedActivity(null)}
+                    className="absolute top-3 right-3 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
+                  >
                     <X size={16} />
                   </button>
+                  {/* Category badge on image */}
+                  <div className="absolute top-3 left-3">
+                    <span className="badge bg-accent/80 text-white border-0 backdrop-blur-sm">
+                      {selectedActivity.category || selectedActivity.type}
+                    </span>
+                  </div>
                 </div>
+
                 <div className="p-6">
-                  <div className="flex items-start justify-between mb-2">
-                    <h2 className="text-xl font-display font-bold text-text-primary">{selectedActivity.name}</h2>
-                    <span className="badge bg-accent/20 text-accent border border-accent/20">${selectedActivity.cost || selectedActivity.price}</span>
+                  {/* Title + Price */}
+                  <div className="flex items-start justify-between gap-3 mb-1">
+                    <h2 className="text-2xl font-display font-bold text-text-primary leading-tight">
+                      {selectedActivity.name}
+                    </h2>
+                    <div className="flex-shrink-0 text-right">
+                      <p className="text-2xl font-mono font-bold text-accent">
+                        ${selectedActivity.cost ?? selectedActivity.price ?? 0}
+                      </p>
+                      <p className="text-xs text-text-secondary">per person</p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="badge bg-white/5 text-text-secondary">{selectedActivity.type || selectedActivity.category}</span>
+
+                  {/* Meta row */}
+                  <div className="flex flex-wrap items-center gap-3 mb-4 text-xs text-text-secondary">
+                    {selectedActivity.duration && (
+                      <span className="flex items-center gap-1">
+                        <span className="text-accent">⏱</span> {selectedActivity.duration}
+                      </span>
+                    )}
+                    {selectedActivity.minAge !== undefined && (
+                      <span className="flex items-center gap-1">
+                        <span className="text-accent">👶</span> Min age: {selectedActivity.minAge === 0 ? 'All ages' : `${selectedActivity.minAge}+`}
+                      </span>
+                    )}
+                    {selectedActivity.bestFor && (
+                      <span className="flex items-center gap-1">
+                        <span className="text-accent">❤️</span> {selectedActivity.bestFor}
+                      </span>
+                    )}
                   </div>
-                  <div className="p-4 rounded-xl bg-white/5 border border-white/5 mb-4">
+
+                  {/* Description */}
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10 mb-4">
                     <p className="text-sm text-text-secondary leading-relaxed">
-                      {selectedActivity.description || 'A highly recommended activity in this city. Click the buttons below to add this directly to your trip!'}
+                      {selectedActivity.description ||
+                        'A top-rated activity perfect for your trip. Book in advance to secure your spot!'}
                     </p>
                   </div>
-                  <button onClick={() => { setSelectedActivity(null); toast.success('Copied name! Add it in the itinerary builder.'); }} className="btn-primary w-full flex items-center justify-center gap-2">
-                    <Info size={16} /> Remember this Activity
-                  </button>
+
+                  {/* Highlights */}
+                  {selectedActivity.highlights && selectedActivity.highlights.length > 0 && (
+                    <div className="mb-4">
+                      <h3 className="text-sm font-display font-semibold text-text-primary mb-2 flex items-center gap-1">
+                        <span className="text-accent">✨</span> Highlights
+                      </h3>
+                      <ul className="space-y-1.5">
+                        {selectedActivity.highlights.map((h, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-text-secondary">
+                            <span className="text-success mt-0.5 flex-shrink-0">✓</span>
+                            {h}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* What's Included */}
+                  {selectedActivity.includes && (
+                    <div className="mb-5">
+                      <h3 className="text-sm font-display font-semibold text-text-primary mb-2 flex items-center gap-1">
+                        <span className="text-accent">🎫</span> What's Included
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedActivity.includes.split(', ').map((item, i) => (
+                          <span key={i} className="text-xs px-2.5 py-1 rounded-full bg-accent/10 text-accent border border-accent/20">
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* CTA Buttons */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        toast.success(`✅ "${selectedActivity.name}" noted! Add it in the Itinerary Builder.`);
+                        setSelectedActivity(null);
+                      }}
+                      className="btn-primary flex-1 flex items-center justify-center gap-2"
+                    >
+                      <Info size={15} /> Add to Trip
+                    </button>
+                    <button
+                      onClick={() => setSelectedActivity(null)}
+                      className="btn-secondary px-4"
+                    >
+                      <X size={15} />
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             </motion.div>
