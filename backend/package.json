@@ -1,0 +1,48 @@
+{
+  "name": "traveloop-backend",
+  "version": "1.0.0",
+  "description": "Traveloop — AI-powered travel planning backend",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "db:generate": "npx prisma generate",
+    "db:migrate": "npx prisma migrate dev",
+    "db:seed": "node prisma/seed.js",
+    "db:reset": "npx prisma migrate reset --force",
+    "db:studio": "npx prisma studio",
+    "test": "jest --coverage",
+    "swagger": "node src/utils/generateSwagger.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.22.0",
+    "@prisma/client": "^6.6.0",
+    "bcryptjs": "^2.4.3",
+    "bull": "^4.16.5",
+    "cloudinary": "^2.6.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "date-fns": "^4.1.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "ioredis": "^5.6.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.10.1",
+    "socket.io": "^4.8.1",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "twilio": "^5.5.1",
+    "uuid": "^11.1.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.9",
+    "prisma": "^6.6.0",
+    "supertest": "^7.1.0"
+  }
+}

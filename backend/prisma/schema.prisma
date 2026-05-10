@@ -1,0 +1,511 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ──────────────────────────────────────
+// User & Auth
+// ──────────────────────────────────────
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  phone         String?
+  photo         String?
+  country       String?
+  location      String?
+  bio           String?
+  language      String   @default("English")
+  role          String   @default("USER")
+  refreshToken  String?
+  resetOtp      String?
+  resetOtpExp   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  trips              Trip[]
+  groupMemberships   GroupMember[]
+  votes              Vote[]
+  notifications      Notification[]
+  emergencyContacts  EmergencyContact[]
+  socialPosts        SocialPost[]
+  aiLogs             AIGenerationLog[]
+
+  @@map("users")
+}
+
+
+
+// ──────────────────────────────────────
+// Trips
+// ──────────────────────────────────────
+
+model Trip {
+  id          String     @id @default(uuid())
+  userId      String
+  name        String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  status      String     @default("UPCOMING")
+  mood        String?
+  source      String?    @default("manual") // manual | ai_generated | forked
+  totalBudget Float      @default(0)
+  totalSpent  Float      @default(0)
+  coverPhoto  String?
+  isPublic    Boolean    @default(false)
+  isLive      Boolean    @default(false)
+  currentStopIndex Int?
+  forkedFromId String?
+  deletedAt   DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  forkedFrom  Trip?      @relation("TripForks", fields: [forkedFromId], references: [id])
+  forks       Trip[]     @relation("TripForks")
+  stops       Stop[]
+  invoice     Invoice?
+  checklist   ChecklistItem[]
+  notes       Note[]
+  groupMembers GroupMember[]
+  votes       Vote[]
+  invites     TripInvite[]
+  personality TravelPersonality?
+  memoryPins  MemoryMapPin[]
+  socialPosts SocialPost[]
+  carbonLogs  CarbonLog[]
+  journal     Journal?
+
+  @@index([userId])
+  @@index([status])
+  @@map("trips")
+}
+
+
+
+// ──────────────────────────────────────
+// Stops (cities within a trip)
+// ──────────────────────────────────────
+
+model Stop {
+  id          String   @id @default(uuid())
+  tripId      String
+  cityName    String
+  country     String?
+  lat         Float?
+  lng         Float?
+  startDate   DateTime
+  endDate     DateTime
+  budget      Float    @default(0)
+  position    Int      @default(0)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  trip        Trip       @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  activities  Activity[]
+  weather     WeatherCache[]
+  notes       Note[]
+  memoryPins  MemoryMapPin[]
+  expenses    Expense[]
+
+  @@index([tripId])
+  @@map("stops")
+}
+
+// ──────────────────────────────────────
+// Activities
+// ──────────────────────────────────────
+
+model Activity {
+  id          String   @id @default(uuid())
+  stopId      String
+  name        String
+  category    String?
+  description String?
+  cost        Float    @default(0)
+  duration    String?
+  startTime   DateTime?
+  endTime     DateTime?
+  image       String?
+  isIndoor    Boolean  @default(false)
+  isAiGenerated Boolean @default(false)
+  checkedInAt DateTime?
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  stop        Stop     @relation(fields: [stopId], references: [id], onDelete: Cascade)
+
+  @@index([stopId])
+  @@map("activities")
+}
+
+// ──────────────────────────────────────
+// Cities (reference data)
+// ──────────────────────────────────────
+
+model City {
+  id          String  @id @default(uuid())
+  name        String
+  country     String
+  region      String?
+  lat         Float?
+  lng         Float?
+  costIndex   Int     @default(3) // 1-5
+  popularity  Int     @default(50) // 0-100
+  image       String?
+  description String?
+
+  @@unique([name, country])
+  @@map("cities")
+}
+
+// ──────────────────────────────────────
+// Budget & Expenses
+// ──────────────────────────────────────
+
+model Expense {
+  id          String   @id @default(uuid())
+  stopId      String
+  category    String   // food, transport, accommodation, activity, shopping, misc
+  description String?
+  amount      Float
+  currency    String   @default("USD")
+  paidAt      DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  stop        Stop     @relation(fields: [stopId], references: [id], onDelete: Cascade)
+
+  @@index([stopId])
+  @@map("expenses")
+}
+
+// ──────────────────────────────────────
+// Invoice
+// ──────────────────────────────────────
+
+model Invoice {
+  id            String   @id @default(uuid())
+  tripId        String   @unique
+  generatedDate DateTime @default(now())
+  status        String        @default("UNPAID")
+  subtotal      Float    @default(0)
+  tax           Float    @default(0)
+  discount      Float    @default(0)
+  grandTotal    Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  trip          Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  items         InvoiceItem[]
+
+  @@map("invoices")
+}
+
+
+
+model InvoiceItem {
+  id          String  @id @default(uuid())
+  invoiceId   String
+  category    String
+  description String
+  qty         String
+  unitCost    Float
+  amount      Float
+
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_items")
+}
+
+// ──────────────────────────────────────
+// Checklist
+// ──────────────────────────────────────
+
+model ChecklistItem {
+  id          String  @id @default(uuid())
+  tripId      String
+  label       String
+  category    String  @default("General")
+  packed      Boolean @default(false)
+  essential   Boolean @default(false)
+  aiGenerated Boolean @default(false)
+  reason      String?
+  createdAt   DateTime @default(now())
+
+  trip        Trip    @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@map("checklist_items")
+}
+
+// ──────────────────────────────────────
+// Notes / Journal
+// ──────────────────────────────────────
+
+model Note {
+  id        String   @id @default(uuid())
+  tripId    String
+  stopId    String?
+  day       Int?
+  title     String
+  body      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  stop      Stop?    @relation(fields: [stopId], references: [id])
+
+  @@index([tripId])
+  @@map("notes")
+}
+
+model Journal {
+  id        String   @id @default(uuid())
+  tripId    String   @unique
+  title     String
+  story     String
+  coverCaption String?
+  isPublic  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  highlights JournalHighlight[]
+
+  @@map("journals")
+}
+
+model JournalHighlight {
+  id        String @id @default(uuid())
+  journalId String
+  day       Int
+  headline  String
+  body      String
+
+  journal   Journal @relation(fields: [journalId], references: [id], onDelete: Cascade)
+
+  @@map("journal_highlights")
+}
+
+// ──────────────────────────────────────
+// Groups & Collaboration
+// ──────────────────────────────────────
+
+model GroupMember {
+  id     String         @id @default(uuid())
+  tripId String
+  userId String
+  role   String          @default("VIEWER")
+  joinedAt DateTime     @default(now())
+
+  trip   Trip           @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, userId])
+  @@map("group_members")
+}
+
+
+
+model Vote {
+  id         String   @id @default(uuid())
+  tripId     String
+  userId     String
+  proposalId String
+  value      Int      // 1 (upvote) or -1 (downvote)
+  createdAt  DateTime @default(now())
+
+  trip       Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, proposalId])
+  @@map("votes")
+}
+
+model TripInvite {
+  id        String   @id @default(uuid())
+  tripId    String
+  email     String?
+  token     String   @unique @default(uuid())
+  role      String    @default("VIEWER")
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@map("trip_invites")
+}
+
+// ──────────────────────────────────────
+// Weather Cache
+// ──────────────────────────────────────
+
+model WeatherCache {
+  id          String   @id @default(uuid())
+  stopId      String
+  date        DateTime
+  temp        Float?
+  feelsLike   Float?
+  humidity    Int?
+  condition   String?  // sunny, rainy, cloudy, storm
+  icon        String?
+  windSpeed   Float?
+  rainChance  Float?
+  fetchedAt   DateTime @default(now())
+
+  stop        Stop     @relation(fields: [stopId], references: [id], onDelete: Cascade)
+
+  @@unique([stopId, date])
+  @@map("weather_cache")
+}
+
+// ──────────────────────────────────────
+// AI Logs
+// ──────────────────────────────────────
+
+model AIGenerationLog {
+  id          String   @id @default(uuid())
+  userId      String
+  feature     String   // trip_generator, mood_planner, budget_optimizer, etc.
+  inputTokens Int      @default(0)
+  outputTokens Int     @default(0)
+  latencyMs   Int      @default(0)
+  model       String   @default("claude-sonnet-4-20250514")
+  prompt      String?
+  response    String?
+  error       String?
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([feature])
+  @@map("ai_generation_logs")
+}
+
+// ──────────────────────────────────────
+// Travel Personality
+// ──────────────────────────────────────
+
+model TravelPersonality {
+  id          String @id @default(uuid())
+  tripId      String @unique
+  style       String? // adventurer, relaxer, culture-vulture, foodie, luxury
+  pace        String? // slow, moderate, fast
+  budget      String? // budget, mid-range, luxury
+  interests   String? // array of interest tags
+  generatedBy String?  @default("ai")
+
+  trip        Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@map("travel_personalities")
+}
+
+// ──────────────────────────────────────
+// Carbon Tracking
+// ──────────────────────────────────────
+
+model CarbonLog {
+  id        String   @id @default(uuid())
+  tripId    String
+  category  String   // flight, drive, train, hotel, food
+  co2Kg     Float
+  details   String?
+  createdAt DateTime @default(now())
+
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@map("carbon_logs")
+}
+
+// ──────────────────────────────────────
+// Emergency
+// ──────────────────────────────────────
+
+model EmergencyContact {
+  id        String @id @default(uuid())
+  userId    String
+  name      String
+  phone     String
+  relation  String?
+  createdAt DateTime @default(now())
+
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("emergency_contacts")
+}
+
+// ──────────────────────────────────────
+// Memory Map
+// ──────────────────────────────────────
+
+model MemoryMapPin {
+  id        String   @id @default(uuid())
+  tripId    String
+  stopId    String?
+  lat       Float
+  lng       Float
+  title     String
+  note      String?
+  photo     String?
+  pinType   String   @default("memory") // memory, highlight, food, view
+  createdAt DateTime @default(now())
+
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  stop      Stop?    @relation(fields: [stopId], references: [id])
+
+  @@map("memory_map_pins")
+}
+
+// ──────────────────────────────────────
+// Notifications
+// ──────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String   // trip_update, vote, consensus, reminder, emergency, budget_alert
+  title     String
+  body      String?
+  data      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("notifications")
+}
+
+// ──────────────────────────────────────
+// Social / Community
+// ──────────────────────────────────────
+
+model SocialPost {
+  id        String   @id @default(uuid())
+  userId    String
+  tripId    String
+  caption   String?
+  likes     Int      @default(0)
+  forks     Int      @default(0)
+  isPublic  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("social_posts")
+}
