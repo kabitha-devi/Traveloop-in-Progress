@@ -240,7 +240,7 @@ router.get('/suggest-activities', asyncHandler(async (req, res) => {
 
   const systemPrompt = `You are a travel recommender. Given a city name, suggest 6 top, must-visit tourist attractions or activities. Return a JSON array. Each object MUST have: name, cost (number in USD), type (e.g. "Culture", "Nature"), and description (1-2 short sentences).`;
 
-  let result = await callAI(systemPrompt, `Suggest 6 activities for ${city}`, req.user.id, 'suggest_activities');
+  let result = await callAI(systemPrompt, `Suggest 6 activities for ${city}`, req.user.id, 'suggest_activities', { destination: city });
 
   if (!Array.isArray(result) && result.activities) result = result.activities;
   if (!Array.isArray(result)) result = [];

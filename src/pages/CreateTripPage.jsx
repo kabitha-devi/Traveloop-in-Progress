@@ -103,6 +103,62 @@ export default function CreateTripPage() {
     }
   };
 
+  const handleAddToTrip = (activity) => {
+    if (!aiResult) {
+      const days = form.startDate && form.endDate
+        ? Math.ceil((new Date(form.endDate) - new Date(form.startDate)) / (1000 * 60 * 60 * 24)) + 1
+        : 5;
+
+      setAiResult({
+        tripName: `Trip to ${form.destination || 'New Place'}`,
+        stops: [{
+          city: form.destination || 'Destination',
+          days: days,
+          activities: [{
+            name: activity.name,
+            cost: activity.cost || 0,
+            time: '10:00',
+            type: activity.category || activity.type,
+            description: activity.description
+          }]
+        }],
+        budgetBreakdown: {
+          activities: activity.cost || 0,
+          food: 100,
+          transport: 100,
+          accommodation: 200,
+          misc: 50
+        }
+      });
+    } else {
+      setAiResult(prev => {
+        const newResult = JSON.parse(JSON.stringify(prev)); // Deep clone
+        if (!newResult.stops || newResult.stops.length === 0) {
+          newResult.stops = [{ city: form.destination || 'Destination', days: 1, activities: [] }];
+        }
+        
+        const stop = newResult.stops[0];
+        if (!stop.activities) stop.activities = [];
+        
+        stop.activities.push({
+          name: activity.name,
+          cost: activity.cost || 0,
+          time: stop.activities.length === 0 ? '10:00' : '14:00',
+          type: activity.category || activity.type,
+          description: activity.description
+        });
+
+        if (newResult.budgetBreakdown) {
+          newResult.budgetBreakdown.activities = (newResult.budgetBreakdown.activities || 0) + (activity.cost || 0);
+        }
+        
+        return newResult;
+      });
+    }
+    toast.success(`✅ "${activity.name}" added to your itinerary!`);
+    setSelectedActivity(null);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!form.name || !form.destination || !form.startDate || !form.endDate) {
@@ -468,10 +524,7 @@ export default function CreateTripPage() {
                   {/* CTA Buttons */}
                   <div className="flex gap-2">
                     <button
-                      onClick={() => {
-                        toast.success(`✅ "${selectedActivity.name}" noted! Add it in the Itinerary Builder.`);
-                        setSelectedActivity(null);
-                      }}
+                      onClick={() => handleAddToTrip(selectedActivity)}
                       className="btn-primary flex-1 flex items-center justify-center gap-2"
                     >
                       <Info size={15} /> Add to Trip
