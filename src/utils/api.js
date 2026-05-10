@@ -1,10 +1,11 @@
+import useAuthStore from '../store/authStore';
+
 const API_URL = 'http://localhost:5000/api';
 
 /**
  * Make authenticated API requests to the Traveloop backend
  */
 async function apiFetch(endpoint, options = {}) {
-  const { default: useAuthStore } = await import('../store/authStore');
   const token = useAuthStore.getState().accessToken;
 
   const config = {
@@ -38,12 +39,13 @@ export const api = {
 export const aiApi = {
   generateTrip: (data) => api.post('/ai/generate-trip', data),
   moodPlanner: (data) => api.post('/ai/mood-planner', data),
-  smartPacking: (tripId) => api.post(`/ai/smart-packing/${tripId}`),
-  optimizeBudget: (tripId) => api.post(`/ai/optimize-budget/${tripId}`),
+  smartPacking: (data) => api.post(`/ai/smart-packing`, data),
+  optimizeBudget: (data) => api.post(`/ai/optimize-budget`, data),
   detectConflicts: (tripId) => api.post(`/ai/detect-conflicts/${tripId}`),
-  weatherReschedule: (tripId) => api.post(`/ai/weather-reschedule/${tripId}`),
+  weatherReschedule: (data) => api.post(`/ai/weather-reschedule`, data),
   generateJournal: (tripId) => api.post(`/ai/generate-journal/${tripId}`),
   emergencyPhrases: (data) => api.post('/ai/emergency-phrases', data),
+  suggestActivities: (city) => api.get(`/ai/suggest-activities?city=${encodeURIComponent(city)}`),
 };
 
 // ── Weather API ──

@@ -22,27 +22,31 @@ import NotesPage from './pages/NotesPage';
 import InvoicePage from './pages/InvoicePage';
 import AdminPage from './pages/AdminPage';
 
+function ProtectedRoute({ children }) {
+  const { isAuthenticated } = useAuthStore();
+  return isAuthenticated ? children : <Navigate to="/auth" replace />;
+}
+
 function AnimatedRoutes() {
   const location = useLocation();
-  const { isAuthenticated } = useAuthStore();
 
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/auth" element={<AuthPage />} />
-        <Route path="/" element={isAuthenticated ? <PageWrapper><DashboardPage /></PageWrapper> : <Navigate to="/auth" />} />
-        <Route path="/trips" element={<PageWrapper><TripsPage /></PageWrapper>} />
-        <Route path="/trips/:tripId" element={<PageWrapper><TripDetailPage /></PageWrapper>} />
-        <Route path="/create-trip" element={<PageWrapper><CreateTripPage /></PageWrapper>} />
-        <Route path="/itinerary-builder/:tripId" element={<PageWrapper><ItineraryBuilderPage /></PageWrapper>} />
-        <Route path="/itinerary/:tripId" element={<PageWrapper><ItineraryViewPage /></PageWrapper>} />
-        <Route path="/search" element={<PageWrapper><SearchPage /></PageWrapper>} />
-        <Route path="/profile" element={<PageWrapper><ProfilePage /></PageWrapper>} />
-        <Route path="/community" element={<PageWrapper><CommunityPage /></PageWrapper>} />
-        <Route path="/checklist" element={<PageWrapper><ChecklistPage /></PageWrapper>} />
-        <Route path="/notes" element={<PageWrapper><NotesPage /></PageWrapper>} />
-        <Route path="/invoice" element={<PageWrapper><InvoicePage /></PageWrapper>} />
-        <Route path="/admin" element={<PageWrapper><AdminPage /></PageWrapper>} />
+        <Route path="/" element={<ProtectedRoute><PageWrapper><DashboardPage /></PageWrapper></ProtectedRoute>} />
+        <Route path="/trips" element={<ProtectedRoute><PageWrapper><TripsPage /></PageWrapper></ProtectedRoute>} />
+        <Route path="/trips/:tripId" element={<ProtectedRoute><PageWrapper><TripDetailPage /></PageWrapper></ProtectedRoute>} />
+        <Route path="/create-trip" element={<ProtectedRoute><PageWrapper><CreateTripPage /></PageWrapper></ProtectedRoute>} />
+        <Route path="/itinerary-builder/:tripId" element={<ProtectedRoute><PageWrapper><ItineraryBuilderPage /></PageWrapper></ProtectedRoute>} />
+        <Route path="/itinerary/:tripId" element={<ProtectedRoute><PageWrapper><ItineraryViewPage /></PageWrapper></ProtectedRoute>} />
+        <Route path="/search" element={<ProtectedRoute><PageWrapper><SearchPage /></PageWrapper></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><PageWrapper><ProfilePage /></PageWrapper></ProtectedRoute>} />
+        <Route path="/community" element={<ProtectedRoute><PageWrapper><CommunityPage /></PageWrapper></ProtectedRoute>} />
+        <Route path="/checklist" element={<ProtectedRoute><PageWrapper><ChecklistPage /></PageWrapper></ProtectedRoute>} />
+        <Route path="/notes" element={<ProtectedRoute><PageWrapper><NotesPage /></PageWrapper></ProtectedRoute>} />
+        <Route path="/invoice" element={<ProtectedRoute><PageWrapper><InvoicePage /></PageWrapper></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute><PageWrapper><AdminPage /></PageWrapper></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </AnimatePresence>
@@ -71,7 +75,7 @@ function AppLayout() {
     <div className="min-h-screen bg-background font-body text-text-primary">
       <Navbar />
       <Sidebar />
-      <main className={`${!isAuthPage && isAuthenticated ? 'lg:ml-60 pt-16' : isAuthPage ? '' : 'pt-16'}`}>
+      <main className={`${!isAuthPage && isAuthenticated ? 'lg:ml-60 print:ml-0 pt-16 print:pt-0' : isAuthPage ? '' : 'pt-16 print:pt-0'}`}>
         <AnimatedRoutes />
       </main>
       <ToastContainer />

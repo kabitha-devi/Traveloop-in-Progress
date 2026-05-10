@@ -8,8 +8,15 @@ import useToast from '../hooks/useToast';
 
 export default function InvoicePage() {
   const toast = useToast();
-  const [selectedInvoice, setSelectedInvoice] = useState(invoices[0]);
+  const [localInvoices, setLocalInvoices] = useState(invoices);
+  const [selectedInvoice, setSelectedInvoice] = useState(localInvoices[0]);
   const trip = trips.find(t => t.id === selectedInvoice.tripId);
+
+  const handleMarkAsPaid = () => {
+    setSelectedInvoice(prev => ({...prev, status: 'paid'}));
+    setLocalInvoices(prev => prev.map(inv => inv.id === selectedInvoice.id ? { ...inv, status: 'paid' } : inv));
+    toast.success('Marked as paid!');
+  };
 
   const categoryTotals = {};
   selectedInvoice.items.forEach(item => {
@@ -27,8 +34,8 @@ export default function InvoicePage() {
       </motion.div>
 
       {/* Invoice Selector */}
-      <div className="flex gap-2 mb-6">
-        {invoices.map(inv => (
+      <div className="flex gap-2 mb-6 print:hidden">
+        {localInvoices.map(inv => (
           <button key={inv.id} onClick={() => setSelectedInvoice(inv)}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${selectedInvoice.id === inv.id ? 'bg-primary text-white' : 'bg-white/5 text-text-secondary'}`}>
             {inv.id}
@@ -95,10 +102,10 @@ export default function InvoicePage() {
           </motion.div>
 
           {/* Actions */}
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3 print:hidden">
             <button onClick={() => toast.success('Invoice downloaded!')} className="btn-primary flex items-center gap-2 text-sm"><Download size={14} /> Download Invoice</button>
-            <button onClick={() => toast.success('Exported as PDF!')} className="btn-secondary flex items-center gap-2 text-sm"><FileText size={14} /> Export as PDF</button>
-            <button onClick={() => { setSelectedInvoice(prev => ({...prev, status: 'paid'})); toast.success('Marked as paid!'); }}
+            <button onClick={() => { window.print(); toast.success('Exporting as PDF!'); }} className="btn-secondary flex items-center gap-2 text-sm"><FileText size={14} /> Export as PDF</button>
+            <button onClick={handleMarkAsPaid}
               className="btn-secondary flex items-center gap-2 text-sm"><CheckCircle size={14} /> Mark as Paid</button>
           </div>
         </div>

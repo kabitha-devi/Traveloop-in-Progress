@@ -11,9 +11,9 @@ router.use(authMiddleware);
 router.post('/generate-trip', asyncHandler(async (req, res) => {
   const { query, budget, days, travelers, preferences } = req.body;
 
-  const systemPrompt = `You are Traveloop AI — an expert travel planner. Generate a complete trip itinerary as valid JSON. Include: tripName, totalBudget, duration, stops (each with city, days, activities array with name/time/duration/cost/type/description, hotel with name/pricePerNight, transport with from/to/mode/cost), budgetBreakdown object, and tips array. Be specific with real places, realistic costs, and practical timing.`;
+  const systemPrompt = `You are Traveloop AI — an expert travel planner. Generate a complete trip itinerary as valid JSON. Include: tripName, totalBudget, duration, stops (each with city, days, activities array with name/time/duration/cost/type/description, hotel with name/pricePerNight, transport with from/to/mode/cost), budgetBreakdown object, and tips array. Be specific with real places, practical timing. IMPORTANT: You MUST strictly adhere to the user's budget and not exceed it! Scale hotel and activity costs accordingly.`;
 
-  const userMsg = `Plan a ${days || 5}-day trip: "${query}". Budget: $${budget || 'flexible'}. Travelers: ${travelers || 1}. Preferences: ${preferences || 'mixed activities'}.`;
+  const userMsg = `Plan a ${days || 5}-day trip: "${query}". Maximum Budget: $${budget || 'flexible'}. Travelers: ${travelers || 1}. Preferences: ${preferences || 'mixed activities'}.`;
 
   const result = await callAI(systemPrompt, userMsg, req.user.id, 'trip_generator');
 
@@ -75,19 +75,16 @@ router.post('/mood-planner', asyncHandler(async (req, res) => {
 }));
 
 // ─── Novelty #4: Budget Optimizer ───
-router.post('/optimize-budget/:tripId', asyncHandler(async (req, res) => {
-  const trip = await prisma.trip.findUnique({
-    where: { id: req.params.tripId },
-    include: { stops: { include: { activities: true, expenses: true } } },
-  });
-  if (!trip) return sendError(res, 'Trip not found', 404);
+router.post('/optimize-budget', asyncHandler(async (req, res) => {
+  const { budget, stops } = req.body;
+  if (!stops) return sendError(res, 'Trip data not provided', 400);
 
   const tripData = JSON.stringify({
-    budget: trip.totalBudget,
-    stops: trip.stops.map(s => ({
-      city: s.cityName,
-      activities: s.activities.map(a => ({ name: a.name, cost: a.cost, category: a.category })),
-      expenses: s.expenses.map(e => ({ category: e.category, amount: e.amount })),
+    budget: budget || 0,
+    stops: stops.map(s => ({
+      city: s.cityName || s.city,
+      activities: (s.activities || []).map(a => ({ name: a.name, cost: a.cost, category: a.category || a.type })),
+      expenses: (s.expenses || []).map(e => ({ category: e.category, amount: e.amount })),
     })),
   });
 
@@ -98,46 +95,24 @@ router.post('/optimize-budget/:tripId', asyncHandler(async (req, res) => {
 }));
 
 // ─── Novelty #6: Smart Packing AI ───
-router.post('/smart-packing/:tripId', asyncHandler(async (req, res) => {
-  const trip = await prisma.trip.findUnique({
-    where: { id: req.params.tripId },
-    include: { stops: true },
-  });
-  if (!trip) return sendError(res, 'Trip not found', 404);
+router.post('/smart-packing', asyncHandler(async (req, res) => {
+  const { tripName, destination, days, mood, stops } = req.body;
 
-  // Fetch weather for first stop
+  // Try to fetch weather for the first destination
   let weatherInfo = 'Unknown';
-  if (trip.stops.length > 0) {
-    const forecast = await getForecast(trip.stops[0].cityName);
-    weatherInfo = JSON.stringify(forecast.slice(0, 3));
+  const firstCity = destination || (stops && stops[0]?.cityName);
+  if (firstCity) {
+    try {
+      const forecast = await getForecast(firstCity);
+      weatherInfo = JSON.stringify(forecast.slice(0, 3));
+    } catch (e) { /* ignore weather errors */ }
   }
 
+  const cities = stops ? stops.map(s => s.cityName).join(', ') : (destination || 'the destination');
   const systemPrompt = `You are a smart packing assistant. Based on destination, weather, trip duration, and activities, generate a packing list. Return JSON with: categories array, each having name and items array (each item has name, essential boolean, and optional reason string).`;
-
-  const cities = trip.stops.map(s => s.cityName).join(', ');
-  const dur = Math.ceil((trip.endDate - trip.startDate) / (1000 * 60 * 60 * 24));
-  const userMsg = `Trip to ${cities}. Duration: ${dur} days. Dates: ${trip.startDate.toISOString().split('T')[0]} to ${trip.endDate.toISOString().split('T')[0]}. Weather: ${weatherInfo}. Mood: ${trip.mood || 'general'}.`;
+  const userMsg = `Trip to ${cities}. Duration: ${days || 5} days. Weather: ${weatherInfo}. Mood: ${mood || 'general'}.`;
 
   const result = await callAI(systemPrompt, userMsg, req.user.id, 'smart_packing');
-
-  // Auto-add to checklist
-  if (result.categories) {
-    for (const cat of result.categories) {
-      for (const item of cat.items || []) {
-        await prisma.checklistItem.create({
-          data: {
-            tripId: trip.id,
-            label: item.name,
-            category: cat.name,
-            essential: item.essential || false,
-            aiGenerated: true,
-            reason: item.reason || null,
-          },
-        });
-      }
-    }
-  }
-
   sendSuccess(res, result);
 }));
 
@@ -217,20 +192,18 @@ router.post('/detect-conflicts/:tripId', asyncHandler(async (req, res) => {
 }));
 
 // ─── Novelty #17: Weather-Aware Rescheduling ───
-router.post('/weather-reschedule/:tripId', asyncHandler(async (req, res) => {
-  const trip = await prisma.trip.findUnique({
-    where: { id: req.params.tripId },
-    include: { stops: { include: { activities: true } } },
-  });
-  if (!trip) return sendError(res, 'Trip not found', 404);
+router.post('/weather-reschedule', asyncHandler(async (req, res) => {
+  const { stops } = req.body;
+  if (!stops || stops.length === 0) return sendError(res, 'No stops provided', 400);
 
   // Fetch weather for each stop
   const stopsWithWeather = [];
-  for (const stop of trip.stops) {
+  for (const stop of stops) {
+    if (!stop.cityName) continue;
     const forecast = await getForecast(stop.cityName);
     stopsWithWeather.push({
       city: stop.cityName,
-      activities: stop.activities.map(a => ({
+      activities: (stop.activities || []).map(a => ({
         name: a.name, isIndoor: a.isIndoor, startTime: a.startTime,
       })),
       weather: forecast,
@@ -261,6 +234,45 @@ router.post('/emergency-phrases', asyncHandler(async (req, res) => {
     'emergency_phrases'
   );
   sendSuccess(res, result);
+}));
+
+// ─── Novelty #18: Dynamic Suggested Activities ───
+router.get('/suggest-activities', asyncHandler(async (req, res) => {
+  const { city } = req.query;
+  if (!city) return sendError(res, 'City is required', 400);
+
+  const systemPrompt = `You are a travel recommender. Given a city name, suggest 6 top, must-visit tourist attractions or activities. Return a JSON array. Each object MUST have: name, cost (number in USD), type (e.g. "Culture", "Nature"), and description (1-2 short sentences).`;
+
+  let result = await callAI(systemPrompt, `Suggest 6 activities for ${city}`, req.user.id, 'suggest_activities');
+
+  if (!Array.isArray(result) && result.activities) result = result.activities;
+  if (!Array.isArray(result)) result = [];
+
+  const unsplashKey = process.env.UNSPLASH_ACCESS_KEY;
+  if (unsplashKey && !unsplashKey.includes('PLACEHOLDER') && unsplashKey !== 'your_unsplash_key') {
+    const withPhotos = await Promise.all(result.slice(0, 6).map(async (act) => {
+      try {
+        const query = encodeURIComponent(`${act.name} ${city} travel`);
+        const photoRes = await fetch(`https://api.unsplash.com/search/photos?query=${query}&per_page=1&client_id=${unsplashKey}`);
+        const photoData = await photoRes.json();
+        if (photoData.results && photoData.results.length > 0) {
+          act.image = photoData.results[0].urls.regular;
+        } else {
+          act.image = `https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&q=80`;
+        }
+      } catch (err) {
+        act.image = `https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&q=80`;
+      }
+      return act;
+    }));
+    return sendSuccess(res, withPhotos);
+  }
+
+  const withFallbackPhotos = result.map(act => ({
+    ...act,
+    image: `https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&q=80`
+  }));
+  sendSuccess(res, withFallbackPhotos);
 }));
 
 // ─── Weather Endpoint ───

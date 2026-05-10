@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, MapPin, Sparkles, ArrowRight, Loader2, Brain, Zap } from 'lucide-react';
+import { Calendar, MapPin, Sparkles, ArrowRight, Loader2, Brain, Zap, X, Info } from 'lucide-react';
 import useTripStore from '../store/tripStore';
 import useAuthStore from '../store/authStore';
 import useToast from '../hooks/useToast';
@@ -19,6 +19,9 @@ export default function CreateTripPage() {
   const [showMoodPlanner, setShowMoodPlanner] = useState(false);
   const [mood, setMood] = useState('');
   const [preferences, setPreferences] = useState('');
+  const [suggestedActivities, setSuggestedActivities] = useState(activities.slice(0, 6));
+  const [loadingActivities, setLoadingActivities] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState(null);
   const { addTrip } = useTripStore();
   const { currentUser } = useAuthStore();
   const navigate = useNavigate();
@@ -29,13 +32,25 @@ export default function CreateTripPage() {
     c.country.toLowerCase().includes(query.toLowerCase())
   );
 
-  const suggestedActivities = activities.slice(0, 6);
-
-  const handleCitySelect = (city) => {
+  const handleCitySelect = async (city) => {
     setSelectedCity(city);
     setQuery(city.name);
     setForm(prev => ({ ...prev, destination: city.name }));
     setShowSuggestions(false);
+
+    setLoadingActivities(true);
+    try {
+      const dynamicActs = await aiApi.suggestActivities(city.name);
+      if (dynamicActs && dynamicActs.length > 0) {
+        // ensure each object has an id for keys
+        const mapped = dynamicActs.map((act, i) => ({ ...act, id: `ai-${i}` }));
+        setSuggestedActivities(mapped);
+      }
+    } catch (e) {
+      console.error('Failed to fetch dynamic activities:', e);
+    } finally {
+      setLoadingActivities(false);
+    }
   };
 
   const handleAIGenerate = async () => {
@@ -314,24 +329,73 @@ export default function CreateTripPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card p-6">
           <div className="flex items-center gap-2 mb-4">
             <Sparkles size={18} className="text-accent" />
-            <h3 className="font-display font-semibold text-lg text-text-primary">Suggested Activities</h3>
+            <h3 className="font-display font-semibold text-lg text-text-primary">
+              {loadingActivities ? 'Finding top activities...' : 'Suggested Activities'}
+            </h3>
+            {loadingActivities && <Loader2 size={16} className="text-accent animate-spin" />}
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className={`grid grid-cols-2 md:grid-cols-3 gap-3 ${loadingActivities ? 'opacity-50' : ''}`}>
             {suggestedActivities.map((activity) => (
-              <div key={activity.id} className="glass-card-hover overflow-hidden cursor-pointer group">
+              <div key={activity.id} onClick={() => setSelectedActivity(activity)} className="glass-card-hover overflow-hidden cursor-pointer group">
                 <div className="relative h-28 overflow-hidden">
                   <img src={activity.image} alt={activity.name}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                   <div className="absolute bottom-2 left-2">
-                    <p className="text-white text-xs font-medium">{activity.name}</p>
-                    <p className="text-white/60 text-xs font-mono">${activity.cost}</p>
+                    <p className="text-white text-xs font-medium truncate w-full pr-2">{activity.name}</p>
+                    <p className="text-white/60 text-xs font-mono">${activity.cost || activity.price}</p>
                   </div>
                 </div>
               </div>
             ))}
           </div>
         </motion.div>
+
+        {/* Activity Details Modal */}
+        <AnimatePresence>
+          {selectedActivity && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+              onClick={() => setSelectedActivity(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                className="glass-card max-w-md w-full overflow-hidden"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="relative h-48">
+                  <img src={selectedActivity.image} alt={selectedActivity.name} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent"></div>
+                  <button onClick={() => setSelectedActivity(null)} className="absolute top-3 right-3 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white transition-colors">
+                    <X size={16} />
+                  </button>
+                </div>
+                <div className="p-6">
+                  <div className="flex items-start justify-between mb-2">
+                    <h2 className="text-xl font-display font-bold text-text-primary">{selectedActivity.name}</h2>
+                    <span className="badge bg-accent/20 text-accent border border-accent/20">${selectedActivity.cost || selectedActivity.price}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="badge bg-white/5 text-text-secondary">{selectedActivity.type || selectedActivity.category}</span>
+                  </div>
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/5 mb-4">
+                    <p className="text-sm text-text-secondary leading-relaxed">
+                      {selectedActivity.description || 'A highly recommended activity in this city. Click the buttons below to add this directly to your trip!'}
+                    </p>
+                  </div>
+                  <button onClick={() => { setSelectedActivity(null); toast.success('Copied name! Add it in the itinerary builder.'); }} className="btn-primary w-full flex items-center justify-center gap-2">
+                    <Info size={16} /> Remember this Activity
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
           <button type="submit" className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-base">

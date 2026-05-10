@@ -19,7 +19,7 @@ export default function ItineraryBuilderPage() {
   const handleWeatherReschedule = async () => {
     setWeatherLoading(true);
     try {
-      const data = await aiApi.weatherReschedule(tripId);
+      const data = await aiApi.weatherReschedule({ stops: sections });
       setWeatherReschedule(data);
       toast.success('Weather analysis complete! 🌧️');
     } catch (error) {

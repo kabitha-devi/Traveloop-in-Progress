@@ -22,10 +22,12 @@ export default function ChecklistPage() {
 
   const handleAdd = () => {
     if (!newItem.label.trim()) return;
-    if (!checklist) {
-      checklist = createChecklist(selectedTrip);
+    let checklistId = checklist?.id;
+    if (!checklistId) {
+      const created = createChecklist(selectedTrip);
+      checklistId = created.id;
     }
-    addItem(checklist.id, newItem);
+    addItem(checklistId, newItem);
     setNewItem({ label: '', category: 'Documents' });
     setShowAdd(false);
     toast.success('Item added!');
@@ -35,11 +37,20 @@ export default function ChecklistPage() {
     if (!selectedTrip) { toast.warning('Select a trip first'); return; }
     setAiLoading(true);
     try {
-      const result = await aiApi.smartPacking(selectedTrip);
-      
+      const trip = trips.find(t => t.id === selectedTrip);
+      const result = await aiApi.smartPacking({
+        tripName: trip?.name,
+        destination: trip?.destination,
+        days: trip?.days,
+        mood: trip?.mood,
+        stops: trip?.stops,
+      });
+
       // Create checklist if it doesn't exist
-      if (!checklist) {
-        checklist = createChecklist(selectedTrip);
+      let checklistId = checklist?.id;
+      if (!checklistId) {
+        const created = createChecklist(selectedTrip);
+        checklistId = created.id;
       }
 
       // Add AI-generated items to the checklist
@@ -49,7 +60,7 @@ export default function ChecklistPage() {
           for (const item of cat.items) {
             const existing = items.find(i => i.label.toLowerCase() === item.name.toLowerCase());
             if (!existing) {
-              addItem(checklist.id, {
+              addItem(checklistId, {
                 label: item.name,
                 category: cat.name,
                 essential: item.essential,

@@ -1,35 +1,61 @@
 // mockResponses.js – provides deterministic mock data for AI services when Claude API key is absent.
 
 function getMockResponse(feature, userMessage) {
+  let destination = "Kochi";
+  let budget = 15000;
+  if (userMessage) {
+    const match = userMessage.match(/trip:\s*"([^"]+)"/i);
+    if (match && match[1]) {
+      destination = match[1].replace(/.*trip to\s+/i, '').trim();
+      destination = destination.charAt(0).toUpperCase() + destination.slice(1);
+    }
+    const matchBudget = userMessage.match(/Budget: \$(\d+)/i);
+    if (matchBudget && matchBudget[1]) {
+      budget = parseInt(matchBudget[1], 10);
+    }
+  }
+
+  const accommodation = Math.floor(budget * 0.4);
+  const transport = Math.floor(budget * 0.15);
+  const food = Math.floor(budget * 0.25);
+  const activitiesTotal = Math.floor(budget * 0.15);
+  const misc = budget - accommodation - transport - food - activitiesTotal;
+  
+  const dailyHotel = Math.floor(accommodation / 5);
+  const actCost1 = Math.floor(activitiesTotal * 0.6);
+  const actCost2 = Math.floor(activitiesTotal * 0.4);
+  const trans1 = Math.floor(transport * 0.4);
+  const trans2 = Math.floor(transport * 0.6);
+
   const mocks = {
     trip_generator: {
-      tripName: "AI Generated Trip",
-      totalBudget: 15000,
+      tripName: `AI Generated Trip to ${destination}`,
+      totalBudget: budget,
       duration: "5 days",
       stops: [
         {
-          city: "Kochi",
+          city: destination,
           days: 2,
           activities: [
-            { name: "Fort Kochi Walk", time: "09:00", duration: "2 hours", cost: 0, type: "Culture", description: "Explore colonial architecture and Chinese fishing nets" },
-            { name: "Backwater Cruise", time: "14:00", duration: "3 hours", cost: 1500, type: "Adventure", description: "Scenic cruise through Kerala backwaters" },
+            { name: `Walking Tour of ${destination}`, time: "09:00", duration: "2 hours", cost: 0, type: "Culture", description: `Explore the rich history and main sights of ${destination}` },
+            { name: "Local Cuisine Experience", time: "14:00", duration: "3 hours", cost: actCost1, type: "Food", description: "Taste the best local dishes" },
           ],
-          hotel: { name: "Heritage Hotel Kochi", pricePerNight: 2500 },
-          transport: { from: "Airport", to: "Kochi", mode: "taxi", cost: 800 },
+          hotel: { name: `Grand Hotel ${destination}`, pricePerNight: dailyHotel },
+          transport: { from: "Airport", to: destination, mode: "taxi", cost: trans1 },
         },
         {
-          city: "Munnar",
+          city: `${destination} Outskirts`,
           days: 3,
           activities: [
-            { name: "Tea Plantation Tour", time: "10:00", duration: "3 hours", cost: 500, type: "Culture", description: "Visit lush tea gardens with tasting" },
-            { name: "Eravikulam Trek", time: "07:00", duration: "4 hours", cost: 300, type: "Adventure", description: "Trek through misty mountain trails" },
+            { name: "Nature Reserve Visit", time: "10:00", duration: "3 hours", cost: actCost2, type: "Nature", description: "Beautiful landscapes just outside the city" },
+            { name: "Sunset Viewpoint Trek", time: "16:00", duration: "4 hours", cost: 0, type: "Adventure", description: "Trek to a scenic viewpoint" },
           ],
-          hotel: { name: "Munnar Hillview Resort", pricePerNight: 3000 },
-          transport: { from: "Kochi", to: "Munnar", mode: "road", cost: 1200 },
+          hotel: { name: `${destination} Hillview Resort`, pricePerNight: dailyHotel },
+          transport: { from: destination, to: `${destination} Outskirts`, mode: "road", cost: trans2 },
         },
       ],
-      budgetBreakdown: { accommodation: 6500, transport: 2000, food: 3000, activities: 2300, misc: 1200 },
-      tips: ["Best time to visit: September-March", "Carry light woolens for Munnar", "Book backwater cruise in advance"]
+      budgetBreakdown: { accommodation, transport, food, activities: activitiesTotal, misc },
+      tips: ["Best time to visit: September-March", `Carry comfortable shoes for walking around ${destination}`, "Book local tours in advance"]
     },
     mood_planner: {
       tripName: "Relaxation Retreat",
@@ -79,7 +105,11 @@ function getMockResponse(feature, userMessage) {
       compromises: [{ conflict: "Half want beach, half want trekking", resolution: "Morning trek, afternoon beach — best of both worlds" }]
     },
     emergency_phrases: {
-      phrases: [
+      phrases: (userMessage || '').toLowerCase().includes('japan') ? [
+        { english: "Help me", translation: "Tasukete", phonetic: "Ta-su-ke-te", script: "助けて" },
+        { english: "I need a doctor", translation: "Isha ga hitsuyō desu", phonetic: "I-sha ga hi-tsu-yō de-su", script: "医者が必要です" },
+        { english: "Call police", translation: "Keisatsu o yonde kudasai", phonetic: "Kei-sa-tsu o yon-de ku-da-sai", script: "警察を呼んでください" }
+      ] : [
         { english: "Help me", translation: "Madad karo", phonetic: "Ma-dad ka-ro", script: "मदद करो" },
         { english: "I need a doctor", translation: "Mujhe doctor chahiye", phonetic: "Muj-he doc-tor cha-hi-ye", script: "मुझे डॉक्टर चाहिए" },
         { english: "Call police", translation: "Police ko bulao", phonetic: "Po-lees ko bu-la-o", script: "पुलिस को बुलाओ" }
