@@ -17,6 +17,7 @@ const useAuthStore = create(
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
       const data = await response.json();
@@ -31,7 +32,7 @@ const useAuthStore = create(
       return data.data.user;
     } catch (error) {
       set({ isLoading: false });
-      throw error;
+      throw new Error(error.message || 'Login failed');
     }
   },
 
@@ -41,6 +42,7 @@ const useAuthStore = create(
       const response = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(userData),
       });
       const data = await response.json();
@@ -55,7 +57,7 @@ const useAuthStore = create(
       return data.data.user;
     } catch (error) {
       set({ isLoading: false });
-      throw error;
+      throw new Error(error.message || 'Registration failed');
     }
   },
 

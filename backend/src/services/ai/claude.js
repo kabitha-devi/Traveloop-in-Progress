@@ -1,77 +1,88 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 const prisma = require('../../utils/prisma');
 const { getMockResponse } = require('./mockResponses');
 
-let genAI = null;
-let model = null;
-
-function getModel() {
-  if (!model && process.env.GEMINI_API_KEY && !process.env.GEMINI_API_KEY.includes('PLACEHOLDER')) {
-    genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-  }
-  return model;
+function getApiKey() {
+  return process.env.GROQ_API_KEY && !process.env.GROQ_API_KEY.includes('PLACEHOLDER')
+    ? process.env.GROQ_API_KEY
+    : null;
 }
 
 /**
- * Call Gemini with structured JSON response
+ * Call Groq with structured JSON response
  */
 async function callAI(systemPrompt, userMessage, userId, feature, extraContext, enableSearch = false) {
-  const gemini = getModel();
-  if (!gemini) {
+  const apiKey = getApiKey();
+  if (!apiKey) {
     return getMockResponse(feature, userMessage, extraContext);
   }
 
   const start = Date.now();
   try {
     const payload = {
-      contents: [{ role: 'user', parts: [{ text: userMessage }] }],
-      systemInstruction: { parts: [{ text: systemPrompt }] },
-      generationConfig: {
-        responseMimeType: 'application/json',
-        maxOutputTokens: 4096,
-        temperature: 0.7,
-      },
+      model: 'mixtral-8x7b-32768',
+      messages: [
+        { role: 'system', content: systemPrompt + '\n\nPlease ensure your response is a valid JSON.' },
+        { role: 'user', content: userMessage }
+      ],
+      response_format: { type: "json_object" },
+      max_tokens: 4096,
+      temperature: 0.7,
     };
 
-    if (enableSearch) {
-      payload.tools = [{ googleSearch: {} }];
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Groq API Error: ${response.status} ${errText}`);
     }
 
-    const result = await gemini.generateContent(payload);
-
+    const data = await response.json();
+    let content = data.choices[0].message.content;
     const latency = Date.now() - start;
-    const content = result.response.text();
-    const usage = result.response.usageMetadata || {};
 
     await prisma.aIGenerationLog.create({
       data: {
         userId,
         feature,
-        inputTokens: usage.promptTokenCount || 0,
-        outputTokens: usage.candidatesTokenCount || 0,
+        inputTokens: data.usage?.prompt_tokens || 0,
+        outputTokens: data.usage?.completion_tokens || 0,
         latencyMs: latency,
-        model: 'gemini-2.0-flash',
+        model: 'groq-mixtral-8x7b',
         prompt: userMessage.substring(0, 500),
-        response: content.substring(0, 2000),
+        response: typeof content === 'string' ? content.substring(0, 2000) : JSON.stringify(content).substring(0, 2000),
       },
     });
 
-    try {
-      return JSON.parse(content);
-    } catch (_) {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) return JSON.parse(jsonMatch[0]);
-      const arrMatch = content.match(/\[[\s\S]*\]/);
-      if (arrMatch) return JSON.parse(arrMatch[0]);
-      return { raw: content };
+    if (typeof content === 'object' && content !== null) {
+      return content;
     }
+
+    if (typeof content === 'string') {
+      try {
+        return JSON.parse(content);
+      } catch (_) {
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) return JSON.parse(jsonMatch[0]);
+        const arrMatch = content.match(/\[[\s\S]*\]/);
+        if (arrMatch) return JSON.parse(arrMatch[0]);
+        return { raw: content };
+      }
+    }
+
+    return { raw: String(content) };
   } catch (error) {
     await prisma.aIGenerationLog.create({
       data: {
         userId, feature,
         latencyMs: Date.now() - start,
-        model: 'gemini-2.0-flash',
+        model: 'groq-mixtral-8x7b',
         prompt: userMessage.substring(0, 500),
         error: error.message,
       },
@@ -82,11 +93,11 @@ async function callAI(systemPrompt, userMessage, userId, feature, extraContext, 
 }
 
 /**
- * Stream Gemini response chunks
+ * Stream Groq response chunks
  */
 async function streamAI(systemPrompt, userMessage, userId, feature, onChunk) {
-  const gemini = getModel();
-  if (!gemini) {
+  const apiKey = getApiKey();
+  if (!apiKey) {
     const mock = getMockResponse(feature, userMessage);
     const str = JSON.stringify(mock, null, 2);
     for (let i = 0; i < str.length; i += 50) {
@@ -99,17 +110,52 @@ async function streamAI(systemPrompt, userMessage, userId, feature, onChunk) {
   const start = Date.now();
   let full = '';
   try {
-    const result = await gemini.generateContentStream({
-      contents: [{ role: 'user', parts: [{ text: userMessage }] }],
-      systemInstruction: { parts: [{ text: systemPrompt }] },
-      generationConfig: { maxOutputTokens: 4096, temperature: 0.7 },
+    const payload = {
+      model: 'mixtral-8x7b-32768',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage }
+      ],
+      stream: true,
+      max_tokens: 4096,
+      temperature: 0.7,
+    };
+
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
     });
 
-    for await (const chunk of result.stream) {
-      const txt = chunk.text();
-      if (txt) {
-        full += txt;
-        onChunk(txt);
+    if (!response.ok) {
+      throw new Error(`Groq API Error: ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunkStr = decoder.decode(value, { stream: true });
+      const lines = chunkStr.split('\n');
+      
+      for (const line of lines) {
+        if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.choices && data.choices[0].delta && data.choices[0].delta.content) {
+              const txt = data.choices[0].delta.content;
+              full += txt;
+              onChunk(txt);
+            }
+          } catch (e) {
+            // ignore parse error for incomplete chunks
+          }
+        }
       }
     }
 
@@ -117,7 +163,7 @@ async function streamAI(systemPrompt, userMessage, userId, feature, onChunk) {
       data: {
         userId, feature,
         latencyMs: Date.now() - start,
-        model: 'gemini-2.0-flash',
+        model: 'groq-mixtral-8x7b-stream',
         prompt: userMessage.substring(0, 500),
         response: full.substring(0, 2000),
       },

@@ -4,6 +4,7 @@ import Navbar from './components/shared/Navbar';
 import Sidebar from './components/shared/Sidebar';
 import ToastContainer from './components/shared/Toast';
 import Modal from './components/shared/Modal';
+import Chatbot from './components/shared/Chatbot';
 import useAuthStore from './store/authStore';
 
 // Pages
@@ -80,6 +81,7 @@ function AppLayout() {
       </main>
       <ToastContainer />
       <Modal />
+      <Chatbot />
     </div>
   );
 }

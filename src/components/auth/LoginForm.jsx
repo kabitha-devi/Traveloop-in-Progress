@@ -5,7 +5,7 @@ import useAuthStore from '../../store/authStore';
 import useToast from '../../hooks/useToast';
 
 export default function LoginForm({ onSwitchToRegister }) {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
@@ -15,7 +15,7 @@ export default function LoginForm({ onSwitchToRegister }) {
 
   const validate = () => {
     const errs = {};
-    if (!username.trim()) errs.username = 'Username or email is required';
+    if (!email.trim()) errs.email = 'Email is required';
     if (!password.trim()) errs.password = 'Password is required';
     else if (password.length < 3) errs.password = 'Password must be at least 3 characters';
     setErrors(errs);
@@ -26,7 +26,7 @@ export default function LoginForm({ onSwitchToRegister }) {
     e.preventDefault();
     if (!validate()) return;
     try {
-      await login(username, password);
+      await login(email, password);
       toast.success('Welcome back! 🎉');
       navigate('/');
     } catch (err) {
@@ -41,18 +41,18 @@ export default function LoginForm({ onSwitchToRegister }) {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-text-secondary mb-1.5" htmlFor="login-username">
-            Username or Email
+          <label className="block text-sm font-medium text-text-secondary mb-1.5" htmlFor="login-email">
+            Email
           </label>
           <input
-            id="login-username"
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            id="login-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             placeholder="alex.rivera@email.com"
-            className={`input-field ${errors.username ? 'border-danger/50 focus:border-danger/50' : ''}`}
+            className={`input-field ${errors.email ? 'border-danger/50 focus:border-danger/50' : ''}`}
           />
-          {errors.username && <p className="text-danger text-xs mt-1">{errors.username}</p>}
+          {errors.email && <p className="text-danger text-xs mt-1">{errors.email}</p>}
         </div>
 
         <div>

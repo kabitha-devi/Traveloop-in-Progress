@@ -19,6 +19,8 @@ export default function CreateTripPage() {
   const [showMoodPlanner, setShowMoodPlanner] = useState(false);
   const [mood, setMood] = useState('');
   const [preferences, setPreferences] = useState('');
+  const [isBleisure, setIsBleisure] = useState(false);
+  const [businessCommitments, setBusinessCommitments] = useState('');
   const [suggestedActivities, setSuggestedActivities] = useState(activities.slice(0, 6));
   const [loadingActivities, setLoadingActivities] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
@@ -71,6 +73,8 @@ export default function CreateTripPage() {
         days,
         travelers: 1,
         preferences: preferences || 'culture and adventure',
+        isBleisure,
+        businessCommitments,
       });
       setAiResult(result);
       toast.success('AI itinerary generated! 🤖');
@@ -284,6 +288,30 @@ export default function CreateTripPage() {
               <h3 className="font-display font-semibold text-lg text-text-primary">AI Trip Planner</h3>
               <p className="text-xs text-text-secondary">Let AI create your perfect itinerary</p>
             </div>
+          </div>
+
+          {/* Bleisure Toggle */}
+          <div className="mb-4 p-4 rounded-xl border border-accent/20 bg-accent/5">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">👔🌴</span>
+                <span className="font-semibold text-sm text-text-primary">Bleisure Mode</span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" checked={isBleisure} onChange={() => setIsBleisure(!isBleisure)} />
+                <div className="w-11 h-6 bg-surface border border-border/50 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-text-secondary peer-checked:after:bg-accent after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+              </label>
+            </div>
+            <AnimatePresence>
+              {isBleisure && (
+                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                  <p className="text-xs text-text-secondary mb-2 mt-1">Combine your business trip with leisure.</p>
+                  <label className="block text-sm font-medium text-text-secondary mb-1.5">Business Commitments</label>
+                  <input type="text" value={businessCommitments} onChange={(e) => setBusinessCommitments(e.target.value)}
+                    placeholder="e.g. Conference on Thursday 9am-5pm" className="input-field" />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           <div className="flex flex-wrap gap-3 mb-4">

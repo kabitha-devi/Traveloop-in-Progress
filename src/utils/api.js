@@ -2,10 +2,31 @@ import useAuthStore from '../store/authStore';
 
 const API_URL = 'http://localhost:5000/api';
 
+async function refreshAccessToken() {
+  try {
+    const response = await fetch(`${API_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    if (!data.success || !data.data?.accessToken) return null;
+
+    useAuthStore.setState({ accessToken: data.data.accessToken, isAuthenticated: true });
+    return data.data.accessToken;
+  } catch (error) {
+    console.error('Refresh token error:', error);
+    return null;
+  }
+}
+
 /**
  * Make authenticated API requests to the Traveloop backend
  */
-async function apiFetch(endpoint, options = {}) {
+async function apiFetch(endpoint, options = {}, shouldRetry = true) {
   const token = useAuthStore.getState().accessToken;
 
   const config = {
@@ -14,11 +35,27 @@ async function apiFetch(endpoint, options = {}) {
       ...(token && { Authorization: `Bearer ${token}` }),
       ...options.headers,
     },
+    credentials: 'include',
     ...options,
   };
 
   const response = await fetch(`${API_URL}${endpoint}`, config);
-  const data = await response.json();
+
+  if (response.status === 401 && shouldRetry) {
+    const refreshedToken = await refreshAccessToken();
+    if (refreshedToken) {
+      return apiFetch(endpoint, options, false);
+    }
+
+    useAuthStore.setState({ currentUser: null, isAuthenticated: false, accessToken: null });
+    throw new Error('Session expired. Please log in again.');
+  }
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(data?.error || `Request failed with status ${response.status}`);
+  }
 
   if (!data.success) {
     throw new Error(data.error || 'API request failed');
@@ -38,6 +75,7 @@ export const api = {
 // ── AI Feature APIs ──
 export const aiApi = {
   generateTrip: (data) => api.post('/ai/generate-trip', data),
+  chat: (data) => api.post('/ai/chat', data),
   moodPlanner: (data) => api.post('/ai/mood-planner', data),
   optimizeBudget: (data) => api.post(`/ai/optimize-budget`, data),
   detectConflicts: (data) => api.post(`/ai/detect-conflicts`, data),

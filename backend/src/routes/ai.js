@@ -9,11 +9,15 @@ router.use(authMiddleware);
 
 // ─── Novelty #1: AI Trip Generator ───
 router.post('/generate-trip', asyncHandler(async (req, res) => {
-  const { query, budget, days, travelers, preferences } = req.body;
+  const { query, budget, days, travelers, preferences, isBleisure, businessCommitments } = req.body;
 
-  const systemPrompt = `You are Traveloop AI — an expert travel planner. Generate a complete trip itinerary as valid JSON. Include: tripName, totalBudget, duration, stops (each with city, days, activities array with name/time/duration/cost/type/description, hotel with name/pricePerNight, transport with from/to/mode/cost), budgetBreakdown object, and tips array. Be specific with real places, practical timing. IMPORTANT: You MUST strictly adhere to the user's budget and not exceed it! Scale hotel and activity costs accordingly.`;
+  let systemPrompt = `You are Traveloop AI — an expert travel planner. Generate a complete trip itinerary as valid JSON. Include: tripName, totalBudget, duration, stops (each with city, days, activities array with name/time/duration/cost/type/description, hotel with name/pricePerNight, transport with from/to/mode/cost), budgetBreakdown object, and tips array. Be specific with real places, practical timing. IMPORTANT: You MUST strictly adhere to the user's budget and not exceed it! Scale hotel and activity costs accordingly.`;
+  
+  if (isBleisure) {
+    systemPrompt += ` This is a BLEISURE trip (Business + Leisure). You MUST schedule the following business commitments strictly as requested, and then optimally wrap personalized leisure activities around them. Ensure the itinerary bridges the gap between corporate travel and personal vacation gracefully.`;
+  }
 
-  const userMsg = `Plan a ${days || 5}-day trip: "${query}". Maximum Budget: $${budget || 'flexible'}. Travelers: ${travelers || 1}. Preferences: ${preferences || 'mixed activities'}.`;
+  const userMsg = `Plan a ${days || 5}-day trip: "${query}". Maximum Budget: $${budget || 'flexible'}. Travelers: ${travelers || 1}. Preferences: ${preferences || 'mixed activities'}.${isBleisure ? ` Business Commitments: ${businessCommitments}` : ''}`;
 
   const result = await callAI(systemPrompt, userMsg, req.user.id, 'trip_generator', { budget: parseInt(budget) || 5000, destination: query, days: parseInt(days) || 5 });
 
@@ -668,6 +672,19 @@ Generate a shareable summary. Return ONLY raw JSON:
 }`;
 
   const result = await callAI(systemPrompt, `Generate share summary for ${tripName}`, req.user.id, 'packing_share', { tripName });
+  sendSuccess(res, result);
+}));
+
+// ─── Chatbot Endpoint ───
+router.post('/chat', asyncHandler(async (req, res) => {
+  const { message, history } = req.body;
+  const systemPrompt = `You are Groq, the AI travel assistant for Traveloop. Keep answers concise, helpful, and travel-focused. Use a friendly, slightly witty tone. Return your response as a JSON object with a single "reply" field containing your response string.`;
+  
+  const userMsg = history && history.length > 0 
+    ? `Chat history:\n${history.map(h => `${h.role}: ${h.content}`).join('\n')}\n\nUser: ${message}` 
+    : message;
+  
+  const result = await callAI(systemPrompt, userMsg, req.user.id, 'chatbot');
   sendSuccess(res, result);
 }));
 

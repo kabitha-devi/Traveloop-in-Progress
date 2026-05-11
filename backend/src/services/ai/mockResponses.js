@@ -667,10 +667,45 @@ function getMockResponse(feature, userMessage, extraContext) {
       missing_essentials: ["Passport", "Charger"],
       hashtags: ["#TravelPrep", "#PackingList", "#Wanderlust"],
       share_text: "Getting ready for my trip! ✈️ 85% packed. Just need to grab my Passport and Charger and I'm good to go! Check out my packing list on Traveloop. #TravelPrep #PackingList"
+    },
+    chatbot: {
+      reply: (() => {
+        const greetings = [
+          "Hi! I'm Groq, your AI travel assistant. How can I help you plan your next adventure?",
+          "Hey there! Need help with trip planning, budget optimization, or travel tips? Ask away!",
+          "Welcome to Traveloop! I can help you generate trips, find activities, pack smart, and much more. What would you like to know?",
+          "Hello! I'm here to help with all things travel. Whether it's finding the perfect destination or planning your itinerary, I'm at your service.",
+          "Looking for travel inspiration? I can suggest destinations, create itineraries, help with budgeting, or answer any travel questions!"
+        ];
+        
+        const userMessageLower = (userMessage || '').toLowerCase();
+        
+        if (userMessageLower.includes('hello') || userMessageLower.includes('hi')) {
+          return greetings[Math.floor(Math.random() * greetings.length)];
+        } else if (userMessageLower.includes('paris')) {
+          return "Paris, the City of Light! 🗼 Perfect for romance, art, and world-class cuisine. Would you like me to create a full itinerary for Paris? I can suggest must-visit landmarks, hidden gems, and authentic local experiences.";
+        } else if (userMessageLower.includes('budget')) {
+          return "I can definitely help with budgeting! Tell me your total budget, trip duration, and preferred destinations. I'll break it down across accommodation, transport, food, activities, and miscellaneous expenses. Plus, I can suggest ways to optimize your spending!";
+        } else if (userMessageLower.includes('packing')) {
+          return "Smart packing is key to a great trip! Tell me where you're going and how long you'll be there, and I'll create a personalized packing list. I'll also suggest smart add-ons you might not have thought of.";
+        } else if (userMessageLower.includes('weather') || userMessageLower.includes('best time')) {
+          return "Great question! The best time to travel depends on your destination. Generally: India (Oct-Mar), Europe (May-Sep), Southeast Asia (Nov-Feb). Tell me where you want to go and I'll give you specific recommendations for weather, crowds, and seasonal highlights!";
+        } else if (userMessageLower.includes('help')) {
+          return "I can help with: ✈️ Trip generation and planning, 🗺️ Destination suggestions, 💰 Budget optimization, 🎒 Smart packing lists, 🍽️ Food recommendations, 🎯 Activity suggestions, and 💬 Travel tips. What would you like help with?";
+        } else {
+          const responses = [
+            "That sounds interesting! Can you give me a bit more detail? For example: Which destination are you thinking of? How long do you want to travel? What's your budget?",
+            "I'd love to help! To give you the best suggestions, could you tell me: (1) Where you want to go, (2) How many days, and (3) Your budget?",
+            "Great! I can definitely assist. Let me know more about your travel plans — where, when, and how much you want to spend. Then I can create the perfect itinerary for you!",
+            "Sounds good! To personalize my recommendations, share your destination preferences, trip length, and budget. That way I can suggest the best activities and planning strategy for you."
+          ];
+          return responses[Math.floor(Math.random() * responses.length)];
+        }
+      })()
     }
   };
 
-  return mocks[feature] || { message: 'AI feature placeholder – configure GEMINI_API_KEY for real generation', feature };
+  return mocks[feature] || { message: 'AI feature placeholder – configure GROQ_API_KEY for real generation', feature };
 }
 
 module.exports = { getMockResponse };

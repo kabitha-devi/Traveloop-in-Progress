@@ -3,12 +3,14 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Calendar, MapPin, Wallet, Edit3, ArrowLeft, Share2, FileText, CheckSquare,
-  CloudRain, Sun, Cloud, Sparkles, TrendingDown, AlertTriangle, Loader2, BookOpen
+  CloudRain, Sun, Cloud, Sparkles, TrendingDown, AlertTriangle, Loader2, BookOpen, Camera, Play
 } from 'lucide-react';
 import useTripStore from '../store/tripStore';
 import { activities as allActivities } from '../data/activities';
 import { weatherApi, aiApi } from '../utils/api';
 import useToast from '../hooks/useToast';
+import ARCameraView from '../components/shared/ARCameraView';
+import TripRecap3D from '../components/shared/TripRecap3D';
 
 const weatherIcons = {
   clear: Sun, clouds: Cloud, rain: CloudRain, snow: Cloud,
@@ -30,6 +32,8 @@ export default function TripDetailPage() {
   const [conflicts, setConflicts] = useState(null);
   const [conflictLoading, setConflictLoading] = useState(false);
   const [activePanel, setActivePanel] = useState(null);
+  const [showAR, setShowAR] = useState(false);
+  const [showRecap, setShowRecap] = useState(false);
 
   if (!trip) {
     return (
@@ -143,6 +147,16 @@ export default function TripDetailPage() {
             className="btn-secondary flex items-center gap-2 text-xs px-3 py-2">
             {conflictLoading ? <Loader2 size={12} className="animate-spin" /> : <AlertTriangle size={12} />}
             Detect Conflicts
+          </button>
+          <button onClick={() => setShowAR(true)}
+            className="btn-secondary flex items-center gap-2 text-xs px-3 py-2 bg-gradient-to-r hover:from-accent/20 hover:to-primary/20 border-accent/30">
+            <Camera size={12} className="text-accent" />
+            AR Memory Drops
+          </button>
+          <button onClick={() => setShowRecap(true)}
+            className="btn-secondary flex items-center gap-2 text-xs px-3 py-2 bg-gradient-to-r hover:from-primary/20 hover:to-accent/20 border-primary/30">
+            <Play size={12} className="text-primary" />
+            3D Trip Recap
           </button>
         </div>
       </motion.div>
@@ -288,6 +302,11 @@ export default function TripDetailPage() {
           );
         })}
       </div>
+
+      <AnimatePresence>
+        {showAR && <ARCameraView trip={trip} onClose={() => setShowAR(false)} />}
+        {showRecap && <TripRecap3D trip={trip} onClose={() => setShowRecap(false)} />}
+      </AnimatePresence>
     </div>
   );
 }

@@ -4,6 +4,10 @@ const prisma = require('../utils/prisma');
 
 async function authMiddleware(req, res, next) {
   try {
+    if (req.method === 'OPTIONS') {
+      return next();
+    }
+
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return sendError(res, 'Access token required', 401);

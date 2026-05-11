@@ -33,6 +33,9 @@ app.use(cors({
     }
   },
   credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  preflightContinue: false,
 }));
 app.use(morgan('dev'));
 app.use(express.json({ limit: '10mb' }));
