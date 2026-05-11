@@ -525,4 +525,150 @@ Return ONLY a raw JSON array:
   sendSuccess(res, result);
 }));
 
+// ─── SMART PACKING AI ENDPOINTS ───
+
+router.post('/packing/generate', asyncHandler(async (req, res) => {
+  const { tripName, destinations, duration, travelStyle, travelMonth, activitiesList, travelerType, budget } = req.body;
+  
+  const systemPrompt = `You are an expert travel packing assistant. A traveler is preparing for a specific trip and needs a personalized, complete packing list.
+
+Trip Details:
+- Trip Name: ${tripName || 'Upcoming Trip'}
+- Destinations: ${destinations?.join(', ') || 'Unknown'}
+- Duration: ${duration || 'A few'} days
+- Travel Style: ${travelStyle || 'Standard'}
+- Season/Month of Travel: ${travelMonth || 'Unknown'}
+- Activities Planned: ${activitiesList?.join(', ') || 'General sightseeing'}
+- Traveler Type: ${travelerType || 'Solo'}
+- Budget Level: ${budget || 'Mid-range'}
+
+Generate a complete, trip-specific packing list. Return ONLY a raw JSON object:
+
+{
+  "trip_summary": "string (1 sentence about why this list is tailored to this trip)",
+  "weather_note": "string (expected weather and what to prepare for)",
+  "categories": [
+    {
+      "id": "string",
+      "name": "string (e.g. Documents, Clothing, Electronics)",
+      "icon": "string (emoji)",
+      "priority": "one of [Essential, Recommended, Optional]",
+      "items": [
+        {
+          "id": "string",
+          "name": "string",
+          "quantity": "string (e.g. x3, 1 pair, as needed)",
+          "why": "string (1 short reason this is relevant to THIS trip specifically)",
+          "priority": "one of [Must-have, Recommended, Nice-to-have]",
+          "packed": false
+        }
+      ]
+    }
+  ],
+  "pro_tips": ["string", "string", "string"],
+  "weight_warning": "string or null (if list seems heavy, give a tip)",
+  "dont_forget": ["string (quirky or commonly forgotten item specific to destination)"]
+}
+
+Rules:
+- Minimum 6 categories, 5+ items each
+- Items must be SPECIFIC to the destinations and activities — not generic
+- For beach destinations: include reef-safe sunscreen, rash guard, etc.
+- For cold climates: include thermal layers, hand warmers, etc.
+- For spiritual/temple destinations: include modest clothing, scarves
+- For adventure trips: include first aid, trekking poles, etc.
+- Mention specific destination needs (e.g. "Tokyo: IC card holder for metro", "Morocco: cash in dirhams")
+- Return raw JSON only`;
+
+  const result = await callAI(systemPrompt, `Generate packing list for ${tripName}`, req.user.id, 'packing_core', { tripName });
+  sendSuccess(res, result);
+}));
+
+router.post('/packing/gamify', asyncHandler(async (req, res) => {
+  const { tripName, destinations, packedCount, totalCount, completedCategories, daysUntilTrip } = req.body;
+  
+  const systemPrompt = `A traveler is packing for ${tripName || 'a trip'} to ${destinations?.join(', ') || 'their destination'}.
+They have packed ${packedCount} out of ${totalCount} items.
+Categories completed: ${completedCategories?.join(', ') || 'None'}
+Time until trip: ${daysUntilTrip || 7} days
+
+Generate engagement content to motivate them. Return ONLY raw JSON:
+
+{
+  "progress_message": "string (fun, encouraging message based on their progress %)",
+  "current_badge": {
+    "name": "string (e.g. 'Half-way Hero', 'Document Master')",
+    "emoji": "string",
+    "unlocked": true or false
+  },
+  "next_badge": {
+    "name": "string",
+    "emoji": "string",
+    "items_remaining": number
+  },
+  "urgency_message": "string or null (if trip is within 3 days, show urgency)",
+  "packing_tip_of_day": "string (specific to their destination)",
+  "challenge": {
+    "title": "string (e.g. 'Pack your documents in the next 10 mins!')",
+    "reward": "string (badge or XP reward)"
+  }
+}`;
+
+  const result = await callAI(systemPrompt, `Generate gamification for ${tripName}`, req.user.id, 'packing_gamify', { packedCount, totalCount });
+  sendSuccess(res, result);
+}));
+
+router.post('/packing/addons', asyncHandler(async (req, res) => {
+  const { destinations, duration, activities, existingItems } = req.body;
+  
+  const systemPrompt = `A traveler is going to ${destinations?.join(', ') || 'their destination'} for ${duration || 'a few'} days doing ${activities?.join(', ') || 'sightseeing'}.
+They have already added these items: ${existingItems?.join(', ') || 'Basic clothes and toiletries'}
+
+Suggest 6 clever add-ons they probably haven't thought of. Return ONLY raw JSON array:
+
+[
+  {
+    "name": "string",
+    "category": "string",
+    "why": "string (destination-specific reason)",
+    "buy_link_search": "string (search term to find this on Amazon/Flipkart)",
+    "estimated_cost": "string",
+    "surprise_factor": "one of [Obvious, Smart, Life-saver, Unexpected]"
+  }
+]
+
+Focus on:
+- Items specific to the destination culture (e.g. "Pocket umbrella — Tokyo has sudden rain showers")
+- Safety items travelers overlook
+- Comfort items for long journeys
+- Destination-specific necessities (plug adapters, local SIM, offline maps)`;
+
+  const result = await callAI(systemPrompt, `Generate smart addons for ${destinations?.join(', ')}`, req.user.id, 'packing_addons', { destinations });
+  sendSuccess(res, result);
+}));
+
+router.post('/packing/share', asyncHandler(async (req, res) => {
+  const { tripName, destinations, packedItems, unpackedItems } = req.body;
+  
+  const systemPrompt = `A traveler wants to share their packing list for ${tripName || 'a trip'} to ${destinations?.join(', ') || 'their destination'}.
+Packed items: ${packedItems?.join(', ') || 'None'}
+Unpacked items: ${unpackedItems?.join(', ') || 'Everything'}
+
+Generate a shareable summary. Return ONLY raw JSON:
+
+{
+  "share_title": "string (catchy title for the shared list)",
+  "share_description": "string (2 sentences, travel-community style)",
+  "readiness_score": number (0–100, based on % packed and category coverage),
+  "readiness_label": "string (e.g. 'Almost Ready!', 'Good to Go!', 'Needs Attention')",
+  "packed_summary": "string (e.g. '14/20 items packed across 5 categories')",
+  "missing_essentials": ["string (unpacked must-have items only)"],
+  "hashtags": ["string", "string", "string"],
+  "share_text": "string (Instagram/WhatsApp style caption for sharing)"
+}`;
+
+  const result = await callAI(systemPrompt, `Generate share summary for ${tripName}`, req.user.id, 'packing_share', { tripName });
+  sendSuccess(res, result);
+}));
+
 module.exports = router;

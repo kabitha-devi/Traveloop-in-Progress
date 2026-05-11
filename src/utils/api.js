@@ -39,7 +39,6 @@ export const api = {
 export const aiApi = {
   generateTrip: (data) => api.post('/ai/generate-trip', data),
   moodPlanner: (data) => api.post('/ai/mood-planner', data),
-  smartPacking: (data) => api.post(`/ai/smart-packing`, data),
   optimizeBudget: (data) => api.post(`/ai/optimize-budget`, data),
   detectConflicts: (data) => api.post(`/ai/detect-conflicts`, data),
   weatherReschedule: (data) => api.post(`/ai/weather-reschedule`, data),
@@ -47,6 +46,14 @@ export const aiApi = {
   emergencyPhrases: (data) => api.post('/ai/emergency-phrases', data),
   suggestActivities: (city) => api.get(`/ai/suggest-activities?city=${encodeURIComponent(city)}`),
   getActivityDetails: (city, title) => api.get(`/ai/activity-details?city=${encodeURIComponent(city)}&title=${encodeURIComponent(title)}`),
+};
+
+// ── Smart Packing APIs ──
+export const packingApi = {
+  generate: (data) => api.post('/ai/packing/generate', data),
+  gamify: (data) => api.post('/ai/packing/gamify', data),
+  addons: (data) => api.post('/ai/packing/addons', data),
+  share: (data) => api.post('/ai/packing/share', data),
 };
 
 // ── Weather API ──

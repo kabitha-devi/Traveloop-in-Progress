@@ -572,7 +572,102 @@ function getMockResponse(feature, userMessage, extraContext) {
       { trip_id: "insp-1", match_score: 95, reason: "Since you love Adventure and Budget travel, this rugged backpacking route perfectly matches your style.", highlight_for_user: "The overnight volcano hike will be right up your alley!" },
       { trip_id: "insp-2", match_score: 88, reason: "You mentioned an interest in food and culture; this itinerary focuses heavily on street food tours and local markets.", highlight_for_user: "The hidden night market food tour is rated 5 stars by other foodies." },
       { trip_id: "insp-3", match_score: 82, reason: "A slightly more relaxed pace for those days you want to unwind, but still packed with authentic local experiences.", highlight_for_user: "A half-day traditional cooking class where you eat what you make." }
-    ]
+    ],
+    packing_core: {
+      trip_summary: "A tailored packing list designed perfectly for your upcoming adventure.",
+      weather_note: "Expect sunny days but cooler evenings; layering is key.",
+      categories: [
+        {
+          id: "cat-1", name: "Documents", icon: "🛂", priority: "Essential",
+          items: [
+            { id: "item-1-1", name: "Passport", quantity: "1", why: "Required for international travel.", priority: "Must-have", packed: false },
+            { id: "item-1-2", name: "Travel Insurance", quantity: "1", why: "Essential safety net.", priority: "Must-have", packed: false },
+            { id: "item-1-3", name: "Flight Tickets", quantity: "2", why: "For departure and return.", priority: "Must-have", packed: false },
+            { id: "item-1-4", name: "Hotel Reservations", quantity: "1", why: "For check-in.", priority: "Must-have", packed: false },
+            { id: "item-1-5", name: "Emergency Contacts", quantity: "1", why: "Just in case.", priority: "Must-have", packed: false }
+          ]
+        },
+        {
+          id: "cat-2", name: "Clothing", icon: "👕", priority: "Essential",
+          items: [
+            { id: "item-2-1", name: "T-shirts", quantity: "5", why: "Daily wear.", priority: "Must-have", packed: false },
+            { id: "item-2-2", name: "Shorts", quantity: "2", why: "For daytime heat.", priority: "Must-have", packed: false },
+            { id: "item-2-3", name: "Light Jacket", quantity: "1", why: "For cooler evenings.", priority: "Must-have", packed: false },
+            { id: "item-2-4", name: "Swimwear", quantity: "1", why: "For the beach or pool.", priority: "Must-have", packed: false },
+            { id: "item-2-5", name: "Comfortable Shoes", quantity: "1 pair", why: "For long walks.", priority: "Must-have", packed: false }
+          ]
+        },
+        {
+          id: "cat-3", name: "Toiletries", icon: "🪥", priority: "Essential",
+          items: [
+            { id: "item-3-1", name: "Toothbrush", quantity: "1", why: "Daily hygiene.", priority: "Must-have", packed: false },
+            { id: "item-3-2", name: "Toothpaste", quantity: "1", why: "Daily hygiene.", priority: "Must-have", packed: false },
+            { id: "item-3-3", name: "Sunscreen", quantity: "1", why: "Protect against UV rays.", priority: "Must-have", packed: false },
+            { id: "item-3-4", name: "Deodorant", quantity: "1", why: "Stay fresh.", priority: "Must-have", packed: false },
+            { id: "item-3-5", name: "Shampoo", quantity: "1", why: "Hair care.", priority: "Recommended", packed: false }
+          ]
+        },
+        {
+          id: "cat-4", name: "Electronics", icon: "📱", priority: "Essential",
+          items: [
+            { id: "item-4-1", name: "Smartphone", quantity: "1", why: "Communication and navigation.", priority: "Must-have", packed: false },
+            { id: "item-4-2", name: "Charger", quantity: "1", why: "Keep devices powered.", priority: "Must-have", packed: false },
+            { id: "item-4-3", name: "Power Bank", quantity: "1", why: "For long days out.", priority: "Recommended", packed: false },
+            { id: "item-4-4", name: "Universal Adapter", quantity: "1", why: "For international outlets.", priority: "Recommended", packed: false },
+            { id: "item-4-5", name: "Headphones", quantity: "1", why: "For the flight.", priority: "Recommended", packed: false }
+          ]
+        },
+        {
+          id: "cat-5", name: "Health & Safety", icon: "💊", priority: "Recommended",
+          items: [
+            { id: "item-5-1", name: "First Aid Kit", quantity: "1", why: "For minor emergencies.", priority: "Recommended", packed: false },
+            { id: "item-5-2", name: "Pain Relievers", quantity: "10 pills", why: "For headaches or aches.", priority: "Recommended", packed: false },
+            { id: "item-5-3", name: "Band-Aids", quantity: "5", why: "For blisters.", priority: "Recommended", packed: false },
+            { id: "item-5-4", name: "Hand Sanitizer", quantity: "1", why: "For hygiene on the go.", priority: "Must-have", packed: false },
+            { id: "item-5-5", name: "Prescription Meds", quantity: "As needed", why: "Personal health requirements.", priority: "Must-have", packed: false }
+          ]
+        },
+        {
+          id: "cat-6", name: "Miscellaneous", icon: "🎒", priority: "Optional",
+          items: [
+            { id: "item-6-1", name: "Sunglasses", quantity: "1", why: "Eye protection.", priority: "Recommended", packed: false },
+            { id: "item-6-2", name: "Water Bottle", quantity: "1", why: "Stay hydrated.", priority: "Recommended", packed: false },
+            { id: "item-6-3", name: "Travel Pillow", quantity: "1", why: "For the flight.", priority: "Nice-to-have", packed: false },
+            { id: "item-6-4", name: "Book/Kindle", quantity: "1", why: "Entertainment.", priority: "Nice-to-have", packed: false },
+            { id: "item-6-5", name: "Snacks", quantity: "3", why: "For between meals.", priority: "Nice-to-have", packed: false }
+          ]
+        }
+      ],
+      pro_tips: ["Roll your clothes instead of folding to save space.", "Put heavy items at the bottom of your suitcase.", "Use packing cubes to stay organized."],
+      weight_warning: "Looks like you have a lot of electronics! Consider bringing a multi-port charger to save space and weight.",
+      dont_forget: ["A reusable tote bag for shopping or beach days!"]
+    },
+    packing_gamify: {
+      progress_message: "You're doing great! Keep up the momentum.",
+      current_badge: { name: "Half-way Hero", emoji: "🏅", unlocked: true },
+      next_badge: { name: "Checklist Champion", emoji: "🏆", items_remaining: 5 },
+      urgency_message: "Your trip is coming up soon! Time to pack the essentials.",
+      packing_tip_of_day: "Remember to pack your chargers in your carry-on.",
+      challenge: { title: "Pack your toiletries in the next 10 mins!", reward: "Speed Packer Badge" }
+    },
+    packing_addons: [
+      { name: "Packing Cubes", category: "Organization", why: "Keeps everything separated and saves space.", buy_link_search: "packing cubes travel", estimated_cost: "$15-$25", surprise_factor: "Smart" },
+      { name: "Travel Door Alarm", category: "Safety", why: "Extra peace of mind in unfamiliar accommodations.", buy_link_search: "travel door alarm", estimated_cost: "$10-$15", surprise_factor: "Unexpected" },
+      { name: "Portable Luggage Scale", category: "Utility", why: "Avoid unexpected overweight baggage fees on your return flight.", buy_link_search: "portable luggage scale", estimated_cost: "$10", surprise_factor: "Life-saver" },
+      { name: "Solid Shampoo Bar", category: "Toiletries", why: "No liquid restrictions and won't leak in your bag.", buy_link_search: "solid shampoo bar", estimated_cost: "$8-$12", surprise_factor: "Smart" },
+      { name: "Universal Travel Adapter with USB-C", category: "Electronics", why: "One plug to charge your phone, laptop, and accessories globally.", buy_link_search: "universal travel adapter gan", estimated_cost: "$20-$30", surprise_factor: "Obvious" },
+      { name: "Collapsible Water Bottle", category: "Miscellaneous", why: "Stays completely flat when empty, perfect for day bags.", buy_link_search: "collapsible water bottle", estimated_cost: "$12", surprise_factor: "Unexpected" }
+    ],
+    packing_share: {
+      share_title: "My Ultimate Packing List!",
+      share_description: "Check out what I'm bringing on my next adventure. I'm almost fully packed and ready to go!",
+      readiness_score: 85,
+      readiness_label: "Almost Ready!",
+      packed_summary: "15/20 items packed across 6 categories",
+      missing_essentials: ["Passport", "Charger"],
+      hashtags: ["#TravelPrep", "#PackingList", "#Wanderlust"],
+      share_text: "Getting ready for my trip! ✈️ 85% packed. Just need to grab my Passport and Charger and I'm good to go! Check out my packing list on Traveloop. #TravelPrep #PackingList"
+    }
   };
 
   return mocks[feature] || { message: 'AI feature placeholder – configure GEMINI_API_KEY for real generation', feature };
