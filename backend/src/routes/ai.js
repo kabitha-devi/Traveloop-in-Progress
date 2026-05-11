@@ -238,12 +238,43 @@ router.get('/suggest-activities', asyncHandler(async (req, res) => {
   const { city } = req.query;
   if (!city) return sendError(res, 'City is required', 400);
 
-  const systemPrompt = `You are a travel recommender. Given a city name, suggest 6 top, must-visit tourist attractions or activities. Return a JSON array. Each object MUST have: name, cost (number in USD), type (e.g. "Culture", "Nature"), and description (1-2 short sentences).`;
+  const systemPrompt = `You are a travel activity expert with deep local knowledge of cities worldwide. When given a city name, you return real, specific, hyper-local activity recommendations — never generic placeholders. Always mention actual neighborhoods, landmarks, venues, and local experiences that are genuinely tied to that city.
+Generate exactly 9 real, specific, diverse activity recommendations for ${city}.
 
-  let result = await callAI(systemPrompt, `Suggest 6 activities for ${city}`, req.user.id, 'suggest_activities', { destination: city });
+Return ONLY a valid JSON array. No markdown, no backticks, no explanation — raw JSON only.
+
+Each object must have these exact fields:
+- title: string (specific to ${city}, not generic — e.g. "Tsukiji Outer Market Morning Tour" not "Local Market Experience")
+- category: one of ["Culture", "Food & Drink", "Nature", "Shopping", "Adventure", "Wellness"]
+- description: string (2 sentences — mention real places, neighborhoods, or landmarks in ${city})
+- duration: string (e.g. "2 hours", "Half day", "3–4 hours")
+- price: string (e.g. "Free", "$15", "$30–50", "₹500")
+- best_for: string (e.g. "Families", "Solo travelers", "Couples", "Food lovers")
+
+Diversity rules — ensure at least:
+- 2 Culture activities
+- 2 Food & Drink activities
+- 1 Nature activity
+- 1 Shopping activity
+- remaining 3 can be any mix
+
+Output only the JSON array. Start your response with [ and end with ].`;
+
+  let result = await callAI(systemPrompt, `Suggest 9 specific, real, iconic activities for ${city}`, req.user.id, 'suggest_activities', { destination: city });
 
   if (!Array.isArray(result) && result.activities) result = result.activities;
   if (!Array.isArray(result)) result = [];
+
+  // Map the new prompt's fields to the expected format for the frontend
+  result = result.map(act => ({
+    ...act,
+    name: act.title || act.name,
+    type: act.category || act.type,
+    bestFor: act.best_for || act.bestFor,
+    // Provide both the raw string price and a fallback numeric cost for compatibility
+    priceStr: act.price,
+    cost: typeof act.cost !== 'undefined' ? act.cost : (act.price && act.price.toLowerCase() === 'free' ? 0 : undefined)
+  }));
 
   const unsplashKey = process.env.UNSPLASH_ACCESS_KEY;
   if (unsplashKey && !unsplashKey.includes('PLACEHOLDER') && unsplashKey !== 'your_unsplash_key') {
@@ -281,6 +312,65 @@ router.get('/weather/:stopId', asyncHandler(async (req, res) => {
 router.get('/forecast/:city', asyncHandler(async (req, res) => {
   const forecast = await getForecast(req.params.city);
   sendSuccess(res, forecast);
+}));
+
+// ─── Novelty: Deep Activity Details with Web Search ───
+router.get('/activity-details', asyncHandler(async (req, res) => {
+  const { city, title } = req.query;
+  if (!city || !title) return sendError(res, 'City and title are required', 400);
+
+  const systemPrompt = `You are a travel research agent with web search capability. When given an activity or place name and city, you search the official website and trusted travel sources to extract real, accurate details. Never fabricate information — only return what you can verify.
+A user clicked on "${title}" in ${city}.
+
+Search the official website and top travel sources for this place and return a JSON object with the following fields:
+
+{
+  "title": "string",
+  "city": "string",
+  "category": "string",
+  "tagline": "string (one-line description)",
+  "about": "string (2–3 sentences from official source)",
+  "highlights": ["string", "string", "string", "string"],
+  "cost": "string (e.g. Free, $10, ₹500)",
+  "duration": "string (e.g. 2–3 hours)",
+  "min_age": "string (e.g. All ages, 12+)",
+  "best_for": "string (e.g. Families, Solo travelers)",
+  "includes": "string (what is included in the visit/ticket)",
+
+  "accommodation": {
+    "available": true or false,
+    "options": ["string", "string"],
+    "price_range": "string",
+    "booking_link": "string (official URL or null)"
+  },
+
+  "food": {
+    "available": true or false,
+    "options": ["string", "string"],
+    "details": "string (type of cuisine, timings, or canteen info)"
+  },
+
+  "facilities": ["string", "string", "string"],
+
+  "contact": {
+    "phone": "string or null",
+    "email": "string or null",
+    "website": "string (official URL)",
+    "address": "string"
+  },
+
+  "source": "string (URL of the official website used)"
+}
+
+Rules:
+- Search the official website first, then fallback to verified sources like Lonely Planet, TripAdvisor, or government tourism sites.
+- If a field is unknown, set it to null — do not guess.
+- Return only raw JSON. No markdown, no explanation.`;
+
+  // enableSearch = true to use Gemini native googleSearch tool
+  const result = await callAI(systemPrompt, `Find exact details for ${title} in ${city}`, req.user.id, 'activity_details', { destination: city, title }, true);
+  
+  sendSuccess(res, result);
 }));
 
 module.exports = router;

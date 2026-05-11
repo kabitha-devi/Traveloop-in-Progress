@@ -16,7 +16,7 @@ function getModel() {
 /**
  * Call Gemini with structured JSON response
  */
-async function callAI(systemPrompt, userMessage, userId, feature, extraContext) {
+async function callAI(systemPrompt, userMessage, userId, feature, extraContext, enableSearch = false) {
   const gemini = getModel();
   if (!gemini) {
     return getMockResponse(feature, userMessage, extraContext);
@@ -24,7 +24,7 @@ async function callAI(systemPrompt, userMessage, userId, feature, extraContext) 
 
   const start = Date.now();
   try {
-    const result = await gemini.generateContent({
+    const payload = {
       contents: [{ role: 'user', parts: [{ text: userMessage }] }],
       systemInstruction: { parts: [{ text: systemPrompt }] },
       generationConfig: {
@@ -32,7 +32,13 @@ async function callAI(systemPrompt, userMessage, userId, feature, extraContext) 
         maxOutputTokens: 4096,
         temperature: 0.7,
       },
-    });
+    };
+
+    if (enableSearch) {
+      payload.tools = [{ googleSearch: {} }];
+    }
+
+    const result = await gemini.generateContent(payload);
 
     const latency = Date.now() - start;
     const content = result.response.text();

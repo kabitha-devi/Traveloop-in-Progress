@@ -46,6 +46,7 @@ export const aiApi = {
   generateJournal: (tripId) => api.post(`/ai/generate-journal/${tripId}`),
   emergencyPhrases: (data) => api.post('/ai/emergency-phrases', data),
   suggestActivities: (city) => api.get(`/ai/suggest-activities?city=${encodeURIComponent(city)}`),
+  getActivityDetails: (city, title) => api.get(`/ai/activity-details?city=${encodeURIComponent(city)}&title=${encodeURIComponent(title)}`),
 };
 
 // ── Weather API ──

@@ -102,6 +102,30 @@ const DESTINATIONS = {
       },
     ],
   },
+  coimbatore: {
+    region: 'Tamil Nadu, India',
+    bestTime: 'October to February',
+    tips: [
+      'Known as "Manchester of South India" — visit textile markets for great deals',
+      'Marudamalai temple is best visited at dawn before crowds arrive',
+      'Try Annapoorna restaurant for authentic Coimbatore meals',
+      'Dhyanalinga at Isha Foundation is 30 km from the city — go early',
+    ],
+    stops: [{
+      cityLabel: 'Coimbatore',
+      days: 3,
+      hotel: { name: 'Hotel Residency Comforts, Race Course Road', pricePerNight: null },
+      activities: [
+        { name: 'Marudamalai Murugan Temple', time: '06:00', duration: '2 hours', cost: 0, type: 'Spiritual', description: 'Ancient hilltop temple on Nilgiri foothills dedicated to Lord Murugan with panoramic city views' },
+        { name: 'Gedee Car Museum', time: '10:00', duration: '2 hours', cost: 5, type: 'Culture', description: 'Remarkable private collection of 200+ vintage cars, motorcycles, and aircraft' },
+        { name: 'Perur Pateeswarar Temple', time: '08:00', duration: '1.5 hours', cost: 0, type: 'Spiritual', description: '2000-year-old Shiva temple with stunning Dravidian architecture and intricate carvings' },
+        { name: 'VOC Park & Zoo', time: '09:00', duration: '3 hours', cost: 3, type: 'Nature', description: 'Large urban park and zoo with 100+ animal species including lions, tigers, and rare birds' },
+        { name: 'Coimbatore Food Trail', time: '18:00', duration: '2 hours', cost: 10, type: 'Food', description: 'Taste famous Parotta Salna, Kothu Parotta, Annapoorna meals, and filter coffee' },
+        { name: 'Dhyanalinga Yoga Temple', time: '09:00', duration: '2.5 hours', cost: 0, type: 'Wellness', description: "Sadhguru's Isha Foundation campus — world-class meditation space and eco-campus" },
+      ],
+      transport: { from: 'Coimbatore Airport', to: 'Coimbatore City', mode: 'Taxi / Airport Shuttle', cost: null },
+    }],
+  },
 };
 
 // ─── Destination Lookup ───
@@ -111,6 +135,7 @@ function matchDestination(text) {
   if (t.includes('tirupati') || t.includes('tirumala') || t.includes('venkateswara')) return DESTINATIONS.tirupati;
   if (t.includes('kerala') || t.includes('kochi') || t.includes('alleppey') || t.includes('munnar')) return DESTINATIONS.kerala;
   if (t.includes('goa') || t.includes('palolem') || t.includes('baga') || t.includes('calangute')) return DESTINATIONS.goa;
+  if (t.includes('coimbatore') || t.includes('kovai')) return DESTINATIONS.coimbatore;
   return null;
 }
 
@@ -395,7 +420,47 @@ function getMockResponse(feature, userMessage, extraContext) {
         ];
       }
 
-      // Generic fallback for any other city — sensible activities with real images
+      if (t.includes('coimbatore') || t.includes('kovai')) {
+        return [
+          { name: 'Marudamalai Murugan Temple', location: 'Marudhamalai Hills, Coimbatore', cost: 0, type: 'Spiritual', duration: '2 hours',
+            description: 'Ancient hilltop temple dedicated to Lord Murugan perched on the Nilgiri foothills. Offers sweeping panoramic views of Coimbatore city and is one of the most revered pilgrimage sites in Tamil Nadu.',
+            highlights: ['Hilltop panoramic city views', 'Ancient Dravidian gopuram', 'Temple elephant', 'Spectacular dawn aarti'],
+            bestFor: 'Pilgrims & culture lovers', minAge: 0, includes: 'Free entry',
+            image: 'https://images.unsplash.com/photo-1561361058-c24e01238a46?w=800&q=80' },
+          { name: 'Gedee Car Museum', location: 'Sathy Road, Race Course, Coimbatore', cost: 5, type: 'Culture', duration: '2 hours',
+            description: "India's finest private automotive museum with 200+ vintage cars, motorcycles, steam engines, and WWII aircraft. Founded by the Gedee family — a must-visit for history enthusiasts.",
+            highlights: ['200+ vintage vehicles', 'WWII-era Spitfire aircraft', 'Rare 1900s Rolls Royce', 'Well-preserved exhibits'],
+            bestFor: 'Families & history buffs', minAge: 0, includes: 'Entry ticket (~₹50)',
+            image: 'https://images.unsplash.com/photo-1489824904134-891ab64532f1?w=800&q=80' },
+          { name: 'Perur Pateeswarar Temple', location: 'Perur Village, 6 km from Coimbatore', cost: 0, type: 'Spiritual', duration: '1.5 hours',
+            description: 'Over 2000-year-old Shiva temple on the banks of River Noyyal with stunning Dravidian architecture, intricate carvings of devas and apsaras, and a sacred tank mentioned in Sangam literature.',
+            highlights: ['2000-year-old heritage', 'Intricate Dravidian carvings', 'Sacred Noyyal riverbank', 'Famous Karthigai festival'],
+            bestFor: 'History buffs & devotees', minAge: 0, includes: 'Free',
+            image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80' },
+          { name: 'VOC Park & Zoo', location: 'Racecourse Road, Coimbatore', cost: 3, type: 'Nature', duration: '3 hours',
+            description: "Coimbatore's largest urban zoo housing 100+ animal species including lions, Bengal tigers, rare white tigers, crocodiles, and exotic birds. A great family outing in the heart of the city.",
+            highlights: ['Rare white tiger', 'Toy train rides', 'Boating lake', '100+ animal species'],
+            bestFor: 'Families with children', minAge: 0, includes: 'Entry (~₹30), toy train separate',
+            image: 'https://images.unsplash.com/photo-1503256207526-0d5523f39793?w=800&q=80' },
+          { name: 'Coimbatore Food Trail (Parotta & Filter Coffee)', location: 'Gandhipuram & RS Puram, Coimbatore', cost: 10, type: 'Food & Drink', duration: '2 hours',
+            description: "Explore Coimbatore's iconic food culture — crispy Parotta with Salna gravy, Kothu Parotta, Annapoorna's legendary meals, and thick South Indian filter coffee at authentic local eateries.",
+            highlights: ['Annapoorna restaurant (since 1970)', 'Famous Parotta Salna', 'Late-night Kothu Parotta stalls', 'Authentic filter coffee decoction'],
+            bestFor: 'Foodies', minAge: 0, includes: 'Self-pay (budget ~₹300)',
+            image: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=800&q=80' },
+          { name: 'Dhyanalinga Yoga Temple & Isha Foundation', location: 'Velliangiri Foothills, 30 km from Coimbatore', cost: 0, type: 'Wellness', duration: '3 hours',
+            description: "Sadhguru's world-renowned Isha Foundation eco-campus. The Dhyanalinga is a unique energized space for meditation that transcends religious boundaries, set amid lush forest.",
+            highlights: ['Powerful meditative space', 'Lush 150-acre eco-campus', 'Theerthakund sacred pool', 'Yoga sessions available'],
+            bestFor: 'Wellness seekers & spiritual travelers', minAge: 0, includes: 'Free (donations welcome)',
+            image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&q=80' },
+          { name: 'Gass Forest Museum & Botanical Garden', location: 'Forest College Campus, Mettupalayam Road', cost: 2, type: 'Nature', duration: '2 hours',
+            description: "One of India's oldest forest museums (est. 1902) showcasing rare timber specimens, wildlife taxidermy, and a lush botanical garden on the historic Forest College campus.",
+            highlights: ['150-year-old museum', 'Rare timber specimens', 'Botanical garden walks', 'Wildlife & bird exhibits'],
+            bestFor: 'Nature lovers & students', minAge: 0, includes: 'Entry fee (~₹20)',
+            image: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80' },
+        ];
+      }
+
+      // Generic fallback — sensible activities with real images
       return [
         { name: `${capitalDest} Heritage Walk`, cost: 0, type: 'Culture', duration: '2.5 hours',
           description: `Explore the historic landmarks, monuments, and cultural highlights of ${capitalDest} with a knowledgeable local guide.`,
@@ -429,6 +494,43 @@ function getMockResponse(feature, userMessage, extraContext) {
           image: 'https://images.unsplash.com/photo-1502920917128-1aa500764bed?w=800&q=80' },
       ];
     })(),
+    activity_details: {
+      title: extraContext?.title || 'Unknown Activity',
+      city: extraContext?.destination || 'Unknown City',
+      category: 'Culture',
+      tagline: 'An immersive experience connecting you with local heritage.',
+      about: 'This location is one of the premier cultural landmarks in the region, offering visitors a unique glimpse into the area’s rich history and vibrant traditions. Known for its meticulously preserved architecture and engaging exhibits, it has been recognized by national tourism boards as a must-visit destination. The site frequently hosts expert-led tours and special events throughout the year.',
+      highlights: [
+        'Guided tours by local experts',
+        'Exclusive access to historical areas',
+        'Interactive cultural exhibits',
+        'Scenic viewpoints for photography'
+      ],
+      cost: '₹500 / $10',
+      duration: '2–3 hours',
+      min_age: 'All ages',
+      best_for: 'Families, History buffs',
+      includes: 'Entry ticket, guided audio tour, access to special exhibits',
+      accommodation: {
+        available: true,
+        options: ['On-site heritage guest house', 'Nearby boutique hotels'],
+        price_range: '$50 - $150 per night',
+        booking_link: 'https://example.com/booking'
+      },
+      food: {
+        available: true,
+        options: ['Traditional cafe', 'Fine dining restaurant nearby'],
+        details: 'Authentic local cuisine served from 8 AM to 10 PM. Vegan options available.'
+      },
+      facilities: ['Wheelchair accessible', 'Restrooms', 'Gift shop', 'Parking'],
+      contact: {
+        phone: '+91 98765 43210',
+        email: 'info@example.com',
+        website: 'https://example.com',
+        address: '123 Main Street, Heritage District'
+      },
+      source: 'https://example.com/official'
+    },
   };
 
   return mocks[feature] || { message: 'AI feature placeholder – configure GEMINI_API_KEY for real generation', feature };
