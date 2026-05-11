@@ -531,6 +531,48 @@ function getMockResponse(feature, userMessage, extraContext) {
       },
       source: 'https://example.com/official'
     },
+    community_feed: [
+      {
+        id: "mock-trip-1",
+        user: { name: "Sarah Jenkins", avatar_initial: "S", avatar_color: "purple", location: "Seattle, USA", trips_count: 12, followers: 340 },
+        trip: { title: "Backpacking the Swiss Alps", tagline: "7 days of pure mountain bliss and fondue.", destinations: ["Zurich", "Zermatt", "Lucerne"], days: 7, stops: 4, travel_style: "Adventure", month_year: "August 2024" },
+        media: [{ type: "photo", caption: "The Matterhorn at sunrise 🏔️", location_tag: "Zermatt, Switzerland", placeholder_description: "A breathtaking view of the Matterhorn mountain at sunrise with pink skies." }],
+        stats: { copies: 45, likes: 312, comments: 28, saves: 102 },
+        highlights: ["Hiking the 5 Lakes Walk", "Glacier Express train ride", "Cheese fondue in a traditional chalet"],
+        budget_per_person: "$1800", rating: 4.8, tags: ["Mountains", "Hiking", "Scenic"]
+      }
+    ],
+    community_review: {
+      sentiment: "positive",
+      summary: "The user absolutely loved the trip, especially the local food recommendations and well-paced itinerary.",
+      highlights_mentioned: ["Great food spots", "Pacing was perfect", "Hidden gems"],
+      concerns_mentioned: ["Some days felt a bit too packed"],
+      helpful_tags: ["Foodie approved", "Action-packed"],
+      reply_suggestion: "So glad you enjoyed the local food spots! We'll definitely take the feedback on pacing into consideration for future itineraries.",
+      display_review: { short_version: "Loved the food and hidden gems! Perfect pacing.", full_version: "This trip was incredible. The local food recommendations were spot on and I felt like we really got to see the hidden gems of the city. My only minor critique is that a couple of the days felt a bit too packed, but overall it was a fantastic experience." }
+    },
+    community_caption: {
+      suggested_caption: "Lost in the vibrant streets of " + (extraContext?.destination || "this beautiful city") + " 🌆 Every corner tells a new story! Who's ready for an adventure?",
+      hashtags: ["#Wanderlust", "#CityVibes", "#TravelDiaries", "#HiddenGems", "#ExploreMore"],
+      location_tag_suggestion: "Old Town District",
+      mood: "Adventurous",
+      alt_captions: ["Soaking up the local culture today ✨", "Can't get enough of these views! 📸"]
+    },
+    community_trending: [
+      { rank: 1, city: "Kyoto", country: "Japan", trend_reason: "Cherry blossom season is approaching, making it a top bucket-list destination right now.", avg_trip_cost: "$1500", best_month: "April", travel_style: "Cultural", community_posts: 1240, trending_activity: "Philosopher's Path Walk" },
+      { rank: 2, city: "Amalfi Coast", country: "Italy", trend_reason: "Travelers are booking early for summer Mediterranean getaways.", avg_trip_cost: "$2200", best_month: "June", travel_style: "Luxury", community_posts: 890, trending_activity: "Boat tour to Capri" },
+      { rank: 3, city: "Banff", country: "Canada", trend_reason: "Late winter ski trips and Northern Lights chasing are peaking.", avg_trip_cost: "$1100", best_month: "March", travel_style: "Adventure", community_posts: 650, trending_activity: "Lake Louise Ice Skating" },
+      { rank: 4, city: "Oaxaca", country: "Mexico", trend_reason: "Culinary tourism is exploding here for authentic mezcal and mole.", avg_trip_cost: "$800", best_month: "November", travel_style: "Foodie", community_posts: 510, trending_activity: "Mezcal Tasting Tour" },
+      { rank: 5, city: "Chiang Mai", country: "Thailand", trend_reason: "Digital nomads are flocking here for the perfect balance of budget and culture.", avg_trip_cost: "$600", best_month: "January", travel_style: "Budget", community_posts: 1500, trending_activity: "Elephant Nature Park" },
+      { rank: 6, city: "Reykjavik", country: "Iceland", trend_reason: "Last chance to easily catch the Aurora Borealis before summer.", avg_trip_cost: "$1800", best_month: "March", travel_style: "Nature", community_posts: 720, trending_activity: "Golden Circle Tour" },
+      { rank: 7, city: "Marrakech", country: "Morocco", trend_reason: "Perfect spring weather before the intense summer heat sets in.", avg_trip_cost: "$900", best_month: "April", travel_style: "Cultural", community_posts: 480, trending_activity: "Medina Souk Shopping" },
+      { rank: 8, city: "Sedona", country: "USA", trend_reason: "Wellness retreats and red rock hiking are highly sought after right now.", avg_trip_cost: "$1300", best_month: "May", travel_style: "Wellness", community_posts: 390, trending_activity: "Vortex Hiking" }
+    ],
+    community_inspiration: [
+      { trip_id: "insp-1", match_score: 95, reason: "Since you love Adventure and Budget travel, this rugged backpacking route perfectly matches your style.", highlight_for_user: "The overnight volcano hike will be right up your alley!" },
+      { trip_id: "insp-2", match_score: 88, reason: "You mentioned an interest in food and culture; this itinerary focuses heavily on street food tours and local markets.", highlight_for_user: "The hidden night market food tour is rated 5 stars by other foodies." },
+      { trip_id: "insp-3", match_score: 82, reason: "A slightly more relaxed pace for those days you want to unwind, but still packed with authentic local experiences.", highlight_for_user: "A half-day traditional cooking class where you eat what you make." }
+    ]
   };
 
   return mocks[feature] || { message: 'AI feature placeholder – configure GEMINI_API_KEY for real generation', feature };

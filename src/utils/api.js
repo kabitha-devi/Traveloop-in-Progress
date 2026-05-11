@@ -69,4 +69,13 @@ export const searchApi = {
   destinations: (query) => api.get(`/search/destinations?q=${encodeURIComponent(query)}`),
 };
 
+// ── Community APIs ──
+export const communityApi = {
+  getFeed: (count) => api.post('/ai/community/feed', { count }),
+  analyzeReview: (data) => api.post('/ai/community/review', data),
+  generateCaption: (data) => api.post('/ai/community/caption', data),
+  getTrending: (month) => api.get(`/ai/community/trending?month=${encodeURIComponent(month || '')}`),
+  getInspiration: (profile) => api.post('/ai/community/inspiration', profile)
+};
+
 export default api;

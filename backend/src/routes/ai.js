@@ -373,4 +373,156 @@ Rules:
   sendSuccess(res, result);
 }));
 
+// ─── COMMUNITY AI ENDPOINTS ───
+
+router.post('/community/feed', asyncHandler(async (req, res) => {
+  const { count = 10 } = req.body;
+  const systemPrompt = `You are a travel community content generator. Generate ${count} realistic community trip posts for a travel app.
+
+Return ONLY a raw JSON array. No markdown, no explanation.
+
+Each object must have:
+{
+  "id": "string (unique)",
+  "user": {
+    "name": "string (realistic full name)",
+    "avatar_initial": "string (first letter of first name)",
+    "avatar_color": "one of [purple, teal, coral, amber, blue]",
+    "location": "string (user's home city, country)",
+    "trips_count": number,
+    "followers": number
+  },
+  "trip": {
+    "title": "string (catchy trip name)",
+    "tagline": "string (one-line hook)",
+    "destinations": ["string"],
+    "days": number,
+    "stops": number,
+    "travel_style": "one of [Adventure, Luxury, Budget, Cultural, Wellness, Family]",
+    "month_year": "string (e.g. March 2025)"
+  },
+  "media": [
+    {
+      "type": "photo",
+      "caption": "string (short caption for the photo)",
+      "location_tag": "string (specific place name)",
+      "placeholder_description": "string (describe what the photo shows, for UI placeholder)"
+    }
+  ],
+  "stats": {
+    "copies": number,
+    "likes": number,
+    "comments": number,
+    "saves": number
+  },
+  "highlights": ["string", "string", "string"],
+  "budget_per_person": "string (e.g. $1200, ₹45,000)",
+  "rating": number,
+  "tags": ["string", "string"]
+}`;
+
+  const result = await callAI(systemPrompt, `Generate ${count} community trip posts.`, req.user.id, 'community_feed', { count });
+  sendSuccess(res, result);
+}));
+
+router.post('/community/review', asyncHandler(async (req, res) => {
+  const { tripTitle, destinations, reviewText, rating } = req.body;
+  
+  const systemPrompt = `A traveler just submitted a review for a community trip post. Analyze the review and return enriched structured data.
+
+Trip title: ${tripTitle}
+Destinations: ${destinations?.join(', ')}
+User review text: "${reviewText}"
+Star rating given: ${rating}/5
+
+Return ONLY a raw JSON object:
+{
+  "sentiment": "one of [positive, neutral, mixed, negative]",
+  "summary": "string (1 sentence AI summary of the review)",
+  "highlights_mentioned": ["string"],
+  "concerns_mentioned": ["string"],
+  "helpful_tags": ["string (e.g. Great for families, Budget-friendly, Overrated, Hidden gem)"],
+  "reply_suggestion": "string (a warm, helpful community reply the app can show as AI suggestion)",
+  "display_review": {
+    "short_version": "string (under 100 chars, for card preview)",
+    "full_version": "string (full review text as submitted)"
+  }
+}`;
+
+  const result = await callAI(systemPrompt, `Analyze review for ${tripTitle}`, req.user.id, 'community_review', { tripTitle });
+  sendSuccess(res, result);
+}));
+
+router.post('/community/caption', asyncHandler(async (req, res) => {
+  const { mediaType = 'photo', destination, note = '' } = req.body;
+  
+  const systemPrompt = `A traveler uploaded a ${mediaType} from their trip to ${destination}.
+Their optional note: "${note}"
+
+Generate engaging social-style content for this post.
+
+Return ONLY a raw JSON object:
+{
+  "suggested_caption": "string (engaging, 1–2 sentences, travel vibe)",
+  "hashtags": ["string", "string", "string", "string", "string"],
+  "location_tag_suggestion": "string (specific landmark or neighborhood)",
+  "mood": "one of [Adventurous, Relaxed, Cultural, Foodie, Luxurious, Spiritual]",
+  "alt_captions": ["string", "string"] 
+}`;
+
+  const result = await callAI(systemPrompt, `Generate caption for ${destination}`, req.user.id, 'community_caption', { destination });
+  sendSuccess(res, result);
+}));
+
+router.get('/community/trending', asyncHandler(async (req, res) => {
+  const { month } = req.query;
+  const currentMonth = month || new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+  
+  const systemPrompt = `Based on current travel trends, generate trending destination data for a travel community app.
+Consider seasonal relevance for ${currentMonth}.
+
+Return ONLY a raw JSON array of 8 destinations:
+{
+  "rank": number,
+  "city": "string",
+  "country": "string",
+  "trend_reason": "string (1 sentence — why it's trending now)",
+  "avg_trip_cost": "string",
+  "best_month": "string",
+  "travel_style": "string",
+  "community_posts": number (realistic count),
+  "trending_activity": "string (most popular activity there right now)"
+}`;
+
+  // Use enableSearch = true for live seasonal data
+  const result = await callAI(systemPrompt, `Generate top 8 trending destinations for ${currentMonth}`, req.user.id, 'community_trending', { currentMonth }, true);
+  sendSuccess(res, result);
+}));
+
+router.post('/community/inspiration', asyncHandler(async (req, res) => {
+  const { homeCity, pastTrips, interests, budget, travelStyle } = req.body;
+  
+  const systemPrompt = `A user is browsing the community section of a travel app.
+
+Their profile:
+- Home city: ${homeCity || 'Unknown'}
+- Past trips: ${pastTrips || 'Unknown'}
+- Interests: ${interests || 'General travel'}
+- Budget preference: ${budget || 'Moderate'}
+- Travel style: ${travelStyle || 'Balanced'}
+
+Recommend 3 community trips from the feed they would most love, and explain why.
+
+Return ONLY a raw JSON array:
+{
+  "trip_id": "string",
+  "match_score": number (0–100),
+  "reason": "string (1–2 sentences, personal and specific)",
+  "highlight_for_user": "string (what this user will love most about this trip)"
+}`;
+
+  const result = await callAI(systemPrompt, `Generate inspiration for user from ${homeCity}`, req.user.id, 'community_inspiration', { homeCity });
+  sendSuccess(res, result);
+}));
+
 module.exports = router;
